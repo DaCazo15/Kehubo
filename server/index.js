@@ -128,7 +128,11 @@ app.post('/api/compress-avatar', compressionLimiter, upload.single('avatar'), as
   }
 })
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🛡️ Backend de Compresión Segura iniciado en http://localhost:${PORT}`)
-})
+// Iniciar servidor en modo local / standalone
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🛡️ Backend de Compresión Segura iniciado en http://localhost:${PORT}`)
+  })
+}
+
+export default app

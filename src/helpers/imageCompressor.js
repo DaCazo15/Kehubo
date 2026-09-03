@@ -8,7 +8,7 @@ export async function compressImageToAvif(file) {
     const formData = new FormData()
     formData.append('avatar', file)
 
-    const backendUrl = import.meta.env.VITE_COMPRESSION_BACKEND_URL || 'http://localhost:3001'
+    const backendUrl = import.meta.env.VITE_COMPRESSION_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:3001' : '')
     const response = await fetch(`${backendUrl}/api/compress-avatar`, {
       method: 'POST',
       body: formData
