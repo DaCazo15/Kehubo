@@ -1,55 +1,48 @@
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onUnmounted, computed } from 'vue'
 
 export function useCronometro() {
-    const tiempo = ref(0)
-    let stopCronometro = null
+  const tiempo = ref(0)
+  let stopCronometro = null
 
-    const iniciarCronometro = () => {
-        const intervalo = setInterval(() => {
-            tiempo.value++
-        }, 1000)
-        stopCronometro = () => clearInterval(intervalo)
+  const iniciarCronometro = () => {
+    detenerCronometro()
+    const intervalo = setInterval(() => {
+      tiempo.value++
+    }, 1000)
+    stopCronometro = () => clearInterval(intervalo)
+  }
+
+  const detenerCronometro = () => {
+    if (stopCronometro) {
+      stopCronometro()
+      stopCronometro = null
     }
+  }
 
-    const detenerCronometro = () => {
-        if (stopCronometro) {
-            stopCronometro()
-            stopCronometro = null
-        }
-    }
+  const resetCronometro = () => {
+    detenerCronometro()
+    tiempo.value = 0
+  }
 
+  onUnmounted(() => {
+    detenerCronometro()
+  })
 
-    const resetCronometro = () => {
-        tiempo.value = 0
+  const tiempoFormateado = computed(() => {
+    const minutos = Math.floor((tiempo.value % 3600) / 60)
+    const segundos = tiempo.value % 60
 
-        if (stopCronometro) {
-            stopCronometro()
-            stopCronometro = null
-        }
-    }
+    return [
+      minutos.toString().padStart(2, '0'),
+      segundos.toString().padStart(2, '0')
+    ].join(':')
+  })
 
-    onMounted(() => {
-        iniciarCronometro()
-    })
-
-    onUnmounted(() => {
-        if (stopCronometro) stopCronometro()
-    })
-
-    const tiempoFormateado = computed(() => {
-        const minutos = Math.floor((tiempo.value % 3600) / 60)
-        const segundos = tiempo.value % 60
-
-        return [
-        minutos.toString().padStart(2, '0'),
-        segundos.toString().padStart(2, '0')
-        ].join(':')
-    })
-
-    return {
-        tiempoFormateado,
-        detenerCronometro,
-        iniciarCronometro,
-        resetCronometro
-    }
+  return {
+    tiempo,
+    tiempoFormateado,
+    detenerCronometro,
+    iniciarCronometro,
+    resetCronometro
+  }
 }

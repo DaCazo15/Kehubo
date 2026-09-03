@@ -1,48 +1,38 @@
 <script setup>
-import { computed, watch } from 'vue'
-import Header from './components/Header.vue'
-import Cartas from './components/Cartas.vue'
-import Tablero from './components/Tablero.vue'
-import { useGame } from './composables/useGame.js'
+import { onMounted, computed } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
+import Navbar from './components/landing/Navbar.vue'
+import ProfileNavbar from './components/profile/ProfileNavbar.vue'
+import AuthModal from './components/auth/AuthModal.vue'
+import { useAuth } from './composables/useAuth'
 
-const { 
-  numeros, verificar, 
-  resetGame, CartasPares, 
-  tiempoFormateado, tableroBloqueado,
-  detener
-} = useGame()
+const route = useRoute()
+const { initAuthListener, isAuthenticated } = useAuth()
 
-const puntaje = computed(() => CartasPares.value.length * 10)
+onMounted(() => {
+  initAuthListener()
+})
 
-watch(
-  () => CartasPares.value.length, (nuevoLength) => {
-    console.log(nuevoLength)
-    if (nuevoLength === 12) {
-      detener()
-    }
-  }
-)
+const isGameView = computed(() => ['game', 'game-rapido'].includes(route.name))
 
+// Si el usuario está en el perfil o en ranking estando autenticado, o navegando autenticado en vistas no-landing,
+// mantenemos el ProfileNavbar activo para que nunca pierda el botón de su perfil.
+const showProfileNavbar = computed(() => {
+  if (isGameView.value) return false
+  return route.name === 'perfil' || (route.name === 'ranking' && isAuthenticated.value) || (isAuthenticated.value && route.name !== 'home')
+})
+
+const showLandingNavbar = computed(() => {
+  if (isGameView.value) return false
+  return !showProfileNavbar.value
+})
 </script>
 
 <template>
-  <Header 
-    :resetGame="resetGame" 
-  />
-  <Tablero 
-    :tiempo="tiempoFormateado" 
-    :puntaje="puntaje" 
-    :tableroBloqueado="tableroBloqueado"
-  />
-  <div
-    class="bg-gradient-to-r from-yellow-500 to-pink-500 rounded-3xl mx-auto w-6xl h-127 mt-4 p-3 flex flex-wrap justify-center gap-3"
-  >
-    <Cartas
-      v-for="carta in numeros"
-      :key="carta.id"
-      :carta="carta"
-      :tableroBloqueado="tableroBloqueado"
-      @verificando="verificar"
-    />
+  <div class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] selection:bg-pink-500 selection:text-white">
+    <ProfileNavbar v-if="showProfileNavbar" />
+    <Navbar v-else-if="showLandingNavbar" />
+    <RouterView />
+    <AuthModal />
   </div>
 </template>
