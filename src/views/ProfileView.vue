@@ -27,6 +27,8 @@ const {
   accountAge,
   matchHistory,
   bestMatches,
+  bestTime,
+  totalScore,
   globalRank,
   localRank,
   friendshipState,
@@ -52,11 +54,6 @@ watch(user, () => {
     profileId.value = user.value.uid
     fetchProfile()
   }
-})
-
-const bestScore = computed(() => {
-  if (bestMatches.value.length === 0) return 0
-  return bestMatches.value[0].score || 0
 })
 </script>
 
@@ -109,7 +106,8 @@ const bestScore = computed(() => {
       <ProfileStatsCard
         :account-age="accountAge"
         :total-games="matchHistory.length"
-        :best-score="bestScore"
+        :best-time="bestTime"
+        :total-score="totalScore"
         :global-rank="globalRank"
         :local-rank="localRank"
         :country-name="displayCountry?.name"

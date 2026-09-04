@@ -93,29 +93,20 @@ async function handleSave() {
 </script>
 
 <template>
-  <div class="game-card-portal rounded-3xl p-6 sm:p-8 space-y-6 border border-amber-500/30 shadow-2xl">
-    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
-          <i class="bi bi-person-gear"></i>
-        </div>
-        <div>
-          <h3 class="text-base font-black uppercase text-slate-100">
-            Ajustes del Guerrero
-          </h3>
-          <p class="text-xs text-slate-400">
-            Personaliza tu identidad, país y avatar de batalla.
-          </p>
-        </div>
+  <div class="space-y-6">
+    <!-- Cabecera del Panel de Ajustes -->
+    <div class="flex items-center gap-3 pb-4 border-b border-slate-800/80">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg shrink-0">
+        <i class="bi bi-person-gear"></i>
       </div>
-
-      <button
-        type="button"
-        @click="emit('close')"
-        class="text-slate-400 hover:text-slate-200 p-2 rounded-xl hover:bg-slate-800/80 transition cursor-pointer"
-      >
-        <i class="bi bi-x-lg"></i>
-      </button>
+      <div>
+        <h3 class="text-base font-black uppercase tracking-tight text-slate-100">
+          Ajustes del Guerrero
+        </h3>
+        <p class="text-xs text-slate-400">
+          Personaliza tu identidad, país y avatar de batalla.
+        </p>
+      </div>
     </div>
 
     <!-- Mensajes de Estado -->
@@ -129,7 +120,7 @@ async function handleSave() {
       <span>{{ errorMessage }}</span>
     </div>
 
-    <form @submit.prevent="handleSave" class="space-y-6">
+    <form @submit.prevent="handleSave" class="space-y-5">
       <!-- Nombre de Usuario -->
       <div class="space-y-1.5">
         <label class="block text-xs font-black uppercase tracking-wider text-slate-300">
@@ -141,7 +132,7 @@ async function handleSave() {
           required
           maxlength="24"
           placeholder="Tu apodo de guerrero"
-          class="w-full bg-slate-950/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
+          class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
         />
       </div>
 
@@ -162,7 +153,7 @@ async function handleSave() {
       />
 
       <!-- Botón Guardar Cambios -->
-      <div class="pt-4 flex justify-end gap-3 border-t border-slate-800">
+      <div class="pt-4 flex justify-end gap-3 border-t border-slate-800/80">
         <BaseButton
           type="button"
           variant="slate"

@@ -57,3 +57,11 @@ export function formatMatchDate(dateValue: any): string {
     return '-'
   }
 }
+
+export function formatSecondsToTime(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || isNaN(seconds)) return '--:--'
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+

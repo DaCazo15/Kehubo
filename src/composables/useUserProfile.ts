@@ -4,7 +4,7 @@ import { db } from '../config/firebase'
 import { useAuth } from './useAuth'
 import { useFriends } from './useFriends'
 import { getCountryByCode } from '../helpers/countries'
-import { formatAccountAge } from '../helpers/dateUtils'
+import { formatAccountAge, formatSecondsToTime } from '../helpers/dateUtils'
 import type { UserProfile, ScoreRecord } from '../types'
 
 export function useUserProfile(profileId: Ref<string>) {
@@ -31,6 +31,30 @@ export function useUserProfile(profileId: Ref<string>) {
     return getCountryByCode(code)
   })
   const accountAge = computed(() => formatAccountAge(profileData.value?.createdAt))
+
+  const bestTime = computed(() => {
+    if (profileData.value?.bestTime !== undefined && profileData.value.bestTime !== null) {
+      return typeof profileData.value.bestTime === 'number' 
+        ? formatSecondsToTime(profileData.value.bestTime) 
+        : String(profileData.value.bestTime)
+    }
+    if (bestMatches.value.length > 0 && bestMatches.value[0].seconds !== undefined) {
+      return formatSecondsToTime(bestMatches.value[0].seconds)
+    }
+    if (matchHistory.value.length > 0) {
+      const minSec = Math.min(...matchHistory.value.map(m => m.seconds ?? 99999))
+      if (minSec < 99999) return formatSecondsToTime(minSec)
+    }
+    return '--:--'
+  })
+
+  const totalScore = computed(() => {
+    if (typeof profileData.value?.totalScore === 'number') {
+      return profileData.value.totalScore
+    }
+    return matchHistory.value.reduce((acc, m) => acc + (m.score || 0), 0)
+  })
+
 
   async function checkStatus() {
     if (!profileId.value || isOwnProfile.value) {
@@ -217,6 +241,8 @@ export function useUserProfile(profileId: Ref<string>) {
     accountAge,
     matchHistory,
     bestMatches,
+    bestTime,
+    totalScore,
     globalRank,
     localRank,
     friendshipState,
