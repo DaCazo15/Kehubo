@@ -109,11 +109,21 @@ export const useAuthStore = defineStore('auth', () => {
       case 'auth/weak-password':
         return 'La contraseña debe tener al menos 6 caracteres.'
       case 'auth/popup-blocked':
-        return 'El navegador bloqueó la ventana emergente de Google. Habilita las ventanas emergentes e inténtalo de nuevo.'
+        return 'El navegador bloqueó la ventana emergente de Google. Habilita las ventanas emergentes en tu navegador e inténtalo de nuevo.'
+      case 'auth/unauthorized-domain':
+        return 'Dominio no autorizado en Firebase. Agrega este dominio en Firebase Console > Authentication > Settings > Authorized Domains.'
+      case 'auth/operation-not-allowed':
+        return 'Este método de inicio de sesión no está habilitado en la consola de Firebase.'
+      case 'auth/account-exists-with-different-credential':
+        return 'Ya existe una cuenta registrada con este correo mediante otro método de acceso.'
+      case 'auth/user-disabled':
+        return 'Esta cuenta ha sido inhabilitada por un administrador.'
+      case 'auth/too-many-requests':
+        return 'Demasiados intentos fallidos. Espera unos momentos antes de reintentar.'
       case 'auth/network-request-failed':
         return 'Error de conexión. Verifica tu conexión a internet.'
       default:
-        return null
+        return error?.message || 'Error de autenticación. Por favor, intenta de nuevo.'
     }
   }
 

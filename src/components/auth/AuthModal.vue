@@ -56,7 +56,7 @@ async function handleRegisterSubmit(data: {
   }
 
   try {
-    await registerWithEmail(data.email, data.password, data.name, data.genero, data.country)
+    await registerWithEmail(data.name, data.email, data.password, data.genero, data.country)
   } catch (err: any) {
     localError.value = err?.message || 'Error al crear la cuenta'
   }
