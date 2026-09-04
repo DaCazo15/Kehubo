@@ -9,18 +9,20 @@ import {
   doc, 
   updateDoc, 
   deleteDoc, 
-  writeBatch,
-  addDoc,
-  serverTimestamp 
+  writeBatch, 
+  addDoc, 
+  serverTimestamp,
+  type Unsubscribe 
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import type { NotificationItem } from '../types'
 
 export const useNotificationStore = defineStore('notifications', () => {
-  const notifications = ref([])
-  const loading = ref(false)
-  const isDropdownOpen = ref(false)
-  const activeToast = ref(null) // Notificación emergente para mostrar en pantalla en vivo
-  let unsubscribe = null
+  const notifications = ref<NotificationItem[]>([])
+  const loading = ref<boolean>(false)
+  const isDropdownOpen = ref<boolean>(false)
+  const activeToast = ref<NotificationItem | null>(null) // Notificación emergente para mostrar en pantalla en vivo
+  let unsubscribe: Unsubscribe | null = null
   let isFirstLoad = true
 
   const unreadNotifications = computed(() => {
@@ -32,7 +34,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   })
 
   // Iniciar escucha en tiempo real para el usuario autenticado
-  function initNotificationsListener(userId) {
+  function initNotificationsListener(userId: string | undefined | null) {
     if (unsubscribe) {
       unsubscribe()
       unsubscribe = null
@@ -60,7 +62,7 @@ export const useNotificationStore = defineStore('notifications', () => {
         const docs = snapshot.docs.map(docSnap => ({
           id: docSnap.id,
           ...docSnap.data()
-        }))
+        })) as NotificationItem[]
 
         // Ordenar por fecha descendente en cliente para evitar necesidad de índice compuesto
         docs.sort((a, b) => {
@@ -90,7 +92,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
-  function showLiveToast(notification) {
+  function showLiveToast(notification: NotificationItem) {
     activeToast.value = notification
     // Ocultar automáticamente después de 6 segundos
     setTimeout(() => {
@@ -113,7 +115,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   }
 
   // Marcar una notificación como leída
-  async function markAsRead(notificationId) {
+  async function markAsRead(notificationId: string) {
     if (!notificationId) return
     try {
       const notifDocRef = doc(db, 'notifications', notificationId)
@@ -148,7 +150,7 @@ export const useNotificationStore = defineStore('notifications', () => {
   }
 
   // Eliminar una notificación
-  async function deleteNotification(notificationId) {
+  async function deleteNotification(notificationId: string) {
     if (!notificationId) return
     try {
       const notifDocRef = doc(db, 'notifications', notificationId)
@@ -160,12 +162,25 @@ export const useNotificationStore = defineStore('notifications', () => {
   }
 
   // Emitir una notificación a otro usuario
-  async function emitNotification({ targetUserId, senderUserId, senderName, senderAvatar, senderCountry, type, message, score, time, seconds, difficulty }) {
+  async function emitNotification(params: {
+    targetUserId: string
+    senderUserId?: string
+    senderName?: string
+    senderAvatar?: string
+    senderCountry?: string
+    type?: string
+    message?: string
+    score?: number
+    time?: string
+    seconds?: number
+    difficulty?: number
+  }) {
+    const { targetUserId, senderUserId, senderName, senderAvatar, senderCountry, type, message, score, time, seconds, difficulty } = params
     if (!targetUserId || targetUserId === 'anonimo' || targetUserId === senderUserId) return
     try {
       await addDoc(collection(db, 'notifications'), {
         targetUserId,
-        senderUserId,
+        senderUserId: senderUserId || '',
         senderName: senderName || 'Guerrero Anónimo',
         senderAvatar: senderAvatar || '',
         senderCountry: senderCountry ? String(senderCountry).toUpperCase() : '',

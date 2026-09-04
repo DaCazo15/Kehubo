@@ -1,14 +1,19 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
+import type { Card } from '../types'
 
-export function useGameTurn(numeros, options = {}) {
+export interface GameTurnOptions {
+  onMatch?: (isCorrect: boolean) => void
+}
+
+export function useGameTurn(numeros: Ref<Card[]>, options: GameTurnOptions = {}) {
   const { onMatch } = options
-  const seleccionadas = ref([])
+  const seleccionadas = ref<Card[]>([])
 
-  const tableroBloqueado = ref(false)
+  const tableroBloqueado = ref<boolean>(false)
 
-  const CartasPares = ref([])
+  const CartasPares = ref<number[]>([])
 
-  const verificar = (cardId) => {
+  const verificar = (cardId: number) => {
     const carta = numeros.value.find((c) => c.id === cardId)
 
     if (
@@ -30,7 +35,7 @@ export function useGameTurn(numeros, options = {}) {
       if (c1.valor === c2.valor) {
         c1.encontrada = true
         c2.encontrada = true
-        CartasPares.value.push(c1.valor)
+        CartasPares.value.push(c1.valor!)
         
         if (onMatch) onMatch(true)
 

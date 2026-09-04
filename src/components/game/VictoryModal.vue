@@ -1,34 +1,26 @@
-<script setup>
+<script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false
-  },
-  tiempo: {
-    type: String,
-    required: true
-  },
-  puntaje: {
-    type: Number,
-    required: true
-  },
-  cardCount: {
-    type: Number,
-    default: 24
-  },
-  isCompetitive: {
-    type: Boolean,
-    default: false
-  },
-  scoreSaved: {
-    type: Boolean,
-    default: false
+withDefaults(
+  defineProps<{
+    isOpen?: boolean
+    tiempo: string
+    puntaje: number
+    cardCount?: number
+    isCompetitive?: boolean
+    scoreSaved?: boolean
+  }>(),
+  {
+    isOpen: false,
+    cardCount: 24,
+    isCompetitive: false,
+    scoreSaved: false
   }
-})
+)
 
-const emit = defineEmits(['playAgain'])
+const emit = defineEmits<{
+  (e: 'playAgain'): void
+}>()
 </script>
 
 <template>

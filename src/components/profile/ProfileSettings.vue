@@ -1,10 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { maleAvatars, femaleAvatars } from '../../helpers/avatars'
 import { countries } from '../../helpers/countries'
+import type { UserGender } from '../../types'
 
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'saved'): void
+}>()
 
 const {
   user,
@@ -19,23 +23,23 @@ const {
 } = useAuth()
 
 // Estados locales para la edición
-const editName = ref('')
-const selectedAvatar = ref('')
-const selectedGender = ref('hombre')
-const selectedCountry = ref('')
-const activeAvatarTab = ref('system') // 'google' | 'system' | 'upload'
-const selectedFile = ref(null)
-const customImagePreview = ref(null)
-const fileInputRef = ref(null)
-const successMessage = ref('')
-const errorMessage = ref('')
-const saving = ref(false)
+const editName = ref<string>('')
+const selectedAvatar = ref<string>('')
+const selectedGender = ref<UserGender>('hombre')
+const selectedCountry = ref<string>('')
+const activeAvatarTab = ref<'google' | 'system' | 'upload'>('system')
+const selectedFile = ref<File | null>(null)
+const customImagePreview = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const successMessage = ref<string>('')
+const errorMessage = ref<string>('')
+const saving = ref<boolean>(false)
 
 function syncFormData() {
   if (user.value) {
     editName.value = userDisplayName.value || ''
     selectedAvatar.value = userAvatar.value || ''
-    selectedGender.value = userGender.value || 'hombre'
+    selectedGender.value = (userGender.value as UserGender) || 'hombre'
     selectedCountry.value = (userProfile.value?.country || '').toUpperCase()
     selectedFile.value = null
     customImagePreview.value = null
@@ -70,14 +74,15 @@ function selectGoogleAvatar() {
   }
 }
 
-function selectSystemAvatar(avatarSrc) {
+function selectSystemAvatar(avatarSrc: string) {
   selectedAvatar.value = avatarSrc
   selectedFile.value = null
   customImagePreview.value = null
 }
 
-function handleFileUpload(event) {
-  const file = event.target.files?.[0]
+function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
@@ -95,7 +100,7 @@ function handleFileUpload(event) {
   const reader = new FileReader()
   reader.onload = (e) => {
     const result = e.target?.result
-    if (result) {
+    if (typeof result === 'string') {
       customImagePreview.value = result
       selectedAvatar.value = result
       errorMessage.value = ''
@@ -128,14 +133,14 @@ async function handleSave() {
         saving.value = false
         return
       }
-      selectedAvatar.value = uploadRes.url
+      selectedAvatar.value = uploadRes.url!
       selectedFile.value = null
     }
 
     // Si hay un país seleccionado, verificamos que coincida con el del dispositivo mediante GPS
     if (selectedCountry.value && selectedCountry.value !== userProfile.value?.country) {
       try {
-        const countryCode = await new Promise((resolve, reject) => {
+        const countryCode = await new Promise<string>((resolve, reject) => {
           if (!navigator.geolocation) {
             reject(new Error('Navegador no soporta GPS'))
             return
@@ -169,8 +174,8 @@ async function handleSave() {
             return // Bloqueamos el guardado
           }
         }
-      } catch (e) {
-        const gpsReason = e.message || 'Desconocido'
+      } catch (e: any) {
+        const gpsReason = e?.message || 'Desconocido'
         console.warn('No se pudo verificar la ubicación por GPS, intentando por IP...', e)
         // Fallback a IP si rechazan permisos o falla el GPS
         try {

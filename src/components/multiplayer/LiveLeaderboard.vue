@@ -1,21 +1,16 @@
-<script setup>
-import { computed } from 'vue'
-import { getCountryName } from '../../helpers/countries'
+<script setup lang="ts">
+import type { RoomPlayer } from '../../types'
 
-const props = defineProps({
-  players: {
-    type: Array,
-    required: true
-  },
-  currentUserId: {
-    type: String,
-    required: true
-  },
-  totalPares: {
-    type: Number,
-    default: 12
+withDefaults(
+  defineProps<{
+    players: RoomPlayer[]
+    currentUserId: string
+    totalPares?: number
+  }>(),
+  {
+    totalPares: 12
   }
-})
+)
 
 // Estilos de posición (1º, 2º, 3º, 4º)
 const rankBadges = [

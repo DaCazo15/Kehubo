@@ -1,38 +1,14 @@
-<script setup>
-defineProps({
-  tiempo: {
-    type: String,
-    required: true
-  },
-  puntaje: {
-    type: Number,
-    required: true
-  },
-  totalPares: {
-    type: Number,
-    default: 12
-  },
-  paresEncontrados: {
-    type: Number,
-    default: 0
-  },
-  cardCount: {
-    type: Number,
-    default: 24
-  },
-  tableroBloqueado: {
-    type: Boolean,
-    required: true
-  },
-  animatingScore: {
-    type: String,
-    default: ''
-  },
-  animatingTime: {
-    type: String,
-    default: ''
-  }
-})
+<script setup lang="ts">
+defineProps<{
+  tiempo: string
+  puntaje: number
+  totalPares?: number
+  paresEncontrados?: number
+  cardCount?: number
+  tableroBloqueado: boolean
+  animatingScore?: string
+  animatingTime?: string
+}>()
 </script>
 
 <template>

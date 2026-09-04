@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 const features = [
   {
     icon: 'bi-lightning-charge-fill',

@@ -1,30 +1,31 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useFriends } from '../../composables/useFriends'
 import { getCountryName } from '../../helpers/countries'
+import type { FriendItem } from '../../types'
+import type { Unsubscribe } from 'firebase/firestore'
 
-const props = defineProps({
-  profileId: {
-    type: String,
-    required: true
-  },
-  isOwnProfile: {
-    type: Boolean,
-    default: false
+const props = withDefaults(
+  defineProps<{
+    profileId: string
+    isOwnProfile?: boolean
+  }>(),
+  {
+    isOwnProfile: false
   }
-})
+)
 
 const router = useRouter()
 const { listenToUserFriends, removeFriend, loading } = useFriends()
 
-const friendsList = ref([])
-const searchQuery = ref('')
-const deletingFriendId = ref(null)
-let unsubscribe = null
+const friendsList = ref<FriendItem[]>([])
+const searchQuery = ref<string>('')
+const deletingFriendId = ref<string | null>(null)
+let unsubscribe: Unsubscribe | (() => void) | null = null
 
 function initListener() {
-  if (unsubscribe) unsubscribe()
+  if (unsubscribe) (unsubscribe as any)()
   if (props.profileId) {
     unsubscribe = listenToUserFriends(props.profileId, (list) => {
       friendsList.value = list
@@ -41,7 +42,7 @@ watch(() => props.profileId, () => {
 })
 
 onUnmounted(() => {
-  if (unsubscribe) unsubscribe()
+  if (unsubscribe) (unsubscribe as any)()
 })
 
 const filteredFriends = computed(() => {
@@ -53,7 +54,7 @@ const filteredFriends = computed(() => {
   })
 })
 
-async function handleRemoveFriend(friendId) {
+async function handleRemoveFriend(friendId: string) {
   if (!confirm('¿Estás seguro de que deseas eliminar a este guerrero de tu lista de amigos?')) return
   deletingFriendId.value = friendId
   await removeFriend(friendId)
@@ -193,7 +194,7 @@ async function handleRemoveFriend(friendId) {
         <div v-if="isOwnProfile" class="shrink-0">
           <button
             type="button"
-            @click="handleRemoveFriend(friend.uid || friend.id)"
+            @click="handleRemoveFriend(friend.uid || friend.id || '')"
             :disabled="deletingFriendId === (friend.uid || friend.id)"
             class="p-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/30 border border-transparent hover:border-red-500/30 transition cursor-pointer disabled:opacity-50"
             title="Eliminar de mis amigos"

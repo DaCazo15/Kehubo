@@ -1,29 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: true
-  },
-  initialCardCount: {
-    type: Number,
-    default: 24
-  },
-  initialCartasVisibles: {
-    type: Boolean,
-    default: false
-  },
-  isCompetitive: {
-    type: Boolean,
-    default: true
+const props = withDefaults(
+  defineProps<{
+    isOpen?: boolean
+    initialCardCount?: number
+    initialCartasVisibles?: boolean
+    isCompetitive?: boolean
+  }>(),
+  {
+    isOpen: true,
+    initialCardCount: 24,
+    initialCartasVisibles: false,
+    isCompetitive: true
   }
-})
+)
 
-const emit = defineEmits(['start', 'close'])
+const emit = defineEmits<{
+  (e: 'start', config: { cardCount: number; cartasVisibles: boolean }): void
+  (e: 'close'): void
+}>()
 
-const selectedCardCount = ref(props.initialCardCount)
-const selectedCartasVisibles = ref(props.initialCartasVisibles)
+const selectedCardCount = ref<number>(props.initialCardCount)
+const selectedCartasVisibles = ref<boolean>(props.initialCartasVisibles)
 
 const difficulties = [
   {

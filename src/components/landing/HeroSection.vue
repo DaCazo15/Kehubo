@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { collection, getCountFromServer } from 'firebase/firestore'
@@ -7,7 +7,7 @@ import { useAuth } from '../../composables/useAuth'
 
 const { isAuthenticated, openAuthModal } = useAuth()
 
-const userCount = ref('+100')
+const userCount = ref<string>('+100')
 
 onMounted(async () => {
   try {

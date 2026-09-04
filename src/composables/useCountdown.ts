@@ -1,11 +1,11 @@
 import { ref, onUnmounted } from 'vue'
 
 export function useCountdown() {
-  const countdown = ref(5)
-  const isCounting = ref(false)
-  const isPaused = ref(false)
-  let timerInterval = null
-  let completeCallback = null
+  const countdown = ref<number>(5)
+  const isCounting = ref<boolean>(false)
+  const isPaused = ref<boolean>(false)
+  let timerInterval: ReturnType<typeof setInterval> | null = null
+  let completeCallback: (() => void) | null = null
 
   const clearTimer = () => {
     if (timerInterval) {
@@ -14,7 +14,7 @@ export function useCountdown() {
     }
   }
 
-  const startCountdown = (duration = 5, onComplete = null) => {
+  const startCountdown = (duration = 5, onComplete: (() => void) | null = null) => {
     clearTimer()
     countdown.value = duration
     isCounting.value = true

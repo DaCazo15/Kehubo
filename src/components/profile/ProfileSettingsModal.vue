@@ -1,16 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { maleAvatars, femaleAvatars } from '../../helpers/avatars'
+import type { UserGender } from '../../types'
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false
+const props = withDefaults(
+  defineProps<{
+    isOpen?: boolean
+  }>(),
+  {
+    isOpen: false
   }
-})
+)
 
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'saved'): void
+}>()
 
 const {
   user,
@@ -24,21 +30,21 @@ const {
 } = useAuth()
 
 // Estados locales para la edición
-const editName = ref('')
-const selectedAvatar = ref('')
-const selectedGender = ref('hombre')
-const activeAvatarTab = ref('system') // 'google' | 'system' | 'upload'
-const customImagePreview = ref(null)
-const fileInputRef = ref(null)
-const successMessage = ref('')
-const errorMessage = ref('')
-const saving = ref(false)
+const editName = ref<string>('')
+const selectedAvatar = ref<string>('')
+const selectedGender = ref<UserGender>('hombre')
+const activeAvatarTab = ref<'google' | 'system' | 'upload'>('system')
+const customImagePreview = ref<string | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const successMessage = ref<string>('')
+const errorMessage = ref<string>('')
+const saving = ref<boolean>(false)
 
 function syncFormData() {
   if (user.value) {
     editName.value = userDisplayName.value || ''
     selectedAvatar.value = userAvatar.value || ''
-    selectedGender.value = userGender.value || 'hombre'
+    selectedGender.value = (userGender.value as UserGender) || 'hombre'
     customImagePreview.value = null
     errorMessage.value = ''
     successMessage.value = ''
@@ -64,13 +70,14 @@ function selectGoogleAvatar() {
   }
 }
 
-function selectSystemAvatar(avatarSrc) {
+function selectSystemAvatar(avatarSrc: string) {
   selectedAvatar.value = avatarSrc
   customImagePreview.value = null
 }
 
-function handleFileUpload(event) {
-  const file = event.target.files?.[0]
+function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
@@ -86,7 +93,7 @@ function handleFileUpload(event) {
   const reader = new FileReader()
   reader.onload = (e) => {
     const result = e.target?.result
-    if (result) {
+    if (typeof result === 'string') {
       customImagePreview.value = result
       selectedAvatar.value = result
       errorMessage.value = ''

@@ -5,7 +5,7 @@ export function useAuth() {
   const authStore = useAuthStore()
   const { 
     user, 
-    userProfile,
+    userProfile, 
     loading, 
     authError, 
     isAuthModalOpen, 

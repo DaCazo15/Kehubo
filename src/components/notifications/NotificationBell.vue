@@ -1,9 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotifications } from '../../composables/useNotifications'
 import { useFriends } from '../../composables/useFriends'
 import { getCountryName } from '../../helpers/countries'
+import type { NotificationItem } from '../../types'
 
 const router = useRouter()
 const {
@@ -17,9 +18,9 @@ const {
 
 const { acceptFriendRequest, rejectFriendRequest } = useFriends()
 
-const isOpen = ref(false)
-const dropdownRef = ref(null)
-const processingNotifId = ref(null)
+const isOpen = ref<boolean>(false)
+const dropdownRef = ref<HTMLElement | null>(null)
+const processingNotifId = ref<string | null>(null)
 
 function toggleDropdown() {
   isOpen.value = !isOpen.value
@@ -29,9 +30,9 @@ function closeDropdown() {
   isOpen.value = false
 }
 
-function handleClickOutside(event) {
+function handleClickOutside(event: MouseEvent) {
   if (!isOpen.value) return
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
     isOpen.value = false
   }
 }
@@ -44,11 +45,11 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-function formatRelativeTime(timestamp) {
+function formatRelativeTime(timestamp: any): string {
   if (!timestamp?.seconds) return 'Reciente'
   const date = new Date(timestamp.seconds * 1000)
   const now = new Date()
-  const diffSeconds = Math.floor((now - date) / 1000)
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
   if (diffSeconds < 60) return 'Hace un momento'
   const diffMinutes = Math.floor(diffSeconds / 60)
@@ -61,7 +62,7 @@ function formatRelativeTime(timestamp) {
   return date.toLocaleDateString()
 }
 
-async function handleAcceptFriend(notif) {
+async function handleAcceptFriend(notif: NotificationItem) {
   processingNotifId.value = notif.id
   await acceptFriendRequest(notif)
   notif.status = 'accepted'
@@ -69,7 +70,7 @@ async function handleAcceptFriend(notif) {
   processingNotifId.value = null
 }
 
-async function handleRejectFriend(notif) {
+async function handleRejectFriend(notif: NotificationItem) {
   processingNotifId.value = notif.id
   await rejectFriendRequest(notif)
   notif.status = 'rejected'
@@ -77,7 +78,7 @@ async function handleRejectFriend(notif) {
   processingNotifId.value = null
 }
 
-function handleNotificationClick(notif) {
+function handleNotificationClick(notif: NotificationItem) {
   markAsRead(notif.id)
   closeDropdown()
   if (notif.senderUserId && notif.senderUserId !== 'anonimo') {

@@ -1,13 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useFriends } from '../composables/useFriends'
 import ProfileSettings from '../components/profile/ProfileSettings.vue'
 import FriendsList from '../components/profile/FriendsList.vue'
-import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { countries, getCountryByCode } from '../helpers/countries'
+import { getCountryByCode } from '../helpers/countries'
+import type { UserProfile, ScoreRecord } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,25 +16,24 @@ const { user, isAuthenticated, userProfile, openAuthModal } = useAuth()
 const { 
   checkFriendshipStatus, 
   sendFriendRequest, 
-  acceptFriendRequest, 
-  removeFriend 
+  acceptFriendRequest
 } = useFriends()
 
-const profileId = ref(route.params.id || user.value?.uid)
+const profileId = ref<string>((route.params.id as string) || user.value?.uid || '')
 const isOwnProfile = computed(() => isAuthenticated.value && user.value?.uid === profileId.value)
-const loading = ref(true)
+const loading = ref<boolean>(true)
 
-const profileData = ref(null)
-const matchHistory = ref([])
-const bestMatches = ref([])
+const profileData = ref<UserProfile | null>(null)
+const matchHistory = ref<ScoreRecord[]>([])
+const bestMatches = ref<ScoreRecord[]>([])
 
-const globalRank = ref(null)
-const localRank = ref(null)
+const globalRank = ref<number | null>(null)
+const localRank = ref<number | null>(null)
 
 // Amistad
-const friendshipState = ref('none') // 'own' | 'friends' | 'pending_sent' | 'pending_received' | 'none' | 'unauthenticated'
-const pendingNotification = ref(null)
-const friendActionLoading = ref(false)
+const friendshipState = ref<string>('none')
+const pendingNotification = ref<any>(null)
+const friendActionLoading = ref<boolean>(false)
 
 const displayAvatar = computed(() => profileData.value?.photoURL || '')
 const displayName = computed(() => profileData.value?.displayName || 'Guerrero')
@@ -50,7 +50,7 @@ const accountAge = computed(() => {
   
   const createdDate = new Date(creationTime)
   const now = new Date()
-  const diffTime = Math.abs(now - createdDate)
+  const diffTime = Math.abs(now.getTime() - createdDate.getTime())
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   
   if (diffDays === 0) return 'Hoy'
@@ -84,7 +84,7 @@ async function checkStatus() {
       senderCountry: profileData.value?.country || ''
     }
   } else {
-    friendshipState.value = res
+    friendshipState.value = res as string
   }
 }
 
@@ -99,7 +99,7 @@ async function handleSendFriendRequest() {
     displayName: displayName.value,
     photoURL: displayAvatar.value,
     country: profileData.value?.country || ''
-  })
+  } as any)
   if (res.success) {
     friendshipState.value = 'pending_sent'
   }
@@ -139,7 +139,7 @@ async function fetchProfileData() {
       const userRef = doc(db, 'users', profileId.value)
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
-        profileData.value = userSnap.data()
+        profileData.value = userSnap.data() as UserProfile
       } else {
         router.push({ name: 'not-found' })
         return
@@ -155,7 +155,7 @@ async function fetchProfileData() {
     try {
       const allQ = query(scoresRef, where('userId', '==', profileId.value))
       const allSnap = await getDocs(allQ)
-      const allMatches = allSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const allMatches = allSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
       
       // Historial reciente (ordenado por fecha desc)
       const sortedByDate = [...allMatches].sort((a, b) => {
@@ -183,7 +183,7 @@ async function fetchProfileData() {
     try {
       const globalQ = query(scoresRef, limit(100))
       const globalSnap = await getDocs(globalQ)
-      const globalDocs = globalSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const globalDocs = globalSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
       
       globalDocs.sort((a, b) => {
         const scoreA = Number(a.score) || 0
@@ -194,13 +194,13 @@ async function fetchProfileData() {
         return secA - secB
       })
       
-      const uniqueGlobal = []
-      const seenGlobal = new Set()
-      for (const doc of globalDocs) {
-        const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
-        if (!seenGlobal.has(identifier)) {
+      const uniqueGlobal: ScoreRecord[] = []
+      const seenGlobal = new Set<string>()
+      for (const docItem of globalDocs) {
+        const identifier = (docItem.userId && docItem.userId !== 'anonimo') ? docItem.userId : (docItem.displayName || '')
+        if (identifier && !seenGlobal.has(identifier)) {
           seenGlobal.add(identifier)
-          uniqueGlobal.push(doc)
+          uniqueGlobal.push(docItem)
         }
       }
       const gIndex = uniqueGlobal.findIndex(u => u.userId === profileId.value)
@@ -215,7 +215,7 @@ async function fetchProfileData() {
         const targetCountry = String(profileData.value.country).toUpperCase()
         const localQ = query(scoresRef, limit(150))
         const localSnap = await getDocs(localQ)
-        const localDocs = localSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+        const localDocs = localSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
         localDocs.sort((a, b) => {
           const scoreA = Number(a.score) || 0
           const scoreB = Number(b.score) || 0
@@ -225,14 +225,14 @@ async function fetchProfileData() {
           return secA - secB
         })
         
-        const uniqueLocal = []
-        const seenLocal = new Set()
-        for (const doc of localDocs) {
-          const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
-          const docCountry = (doc.country ? String(doc.country) : (doc.userId === profileId.value ? targetCountry : '')).toUpperCase()
-          if (docCountry === targetCountry && !seenLocal.has(identifier)) {
+        const uniqueLocal: ScoreRecord[] = []
+        const seenLocal = new Set<string>()
+        for (const docItem of localDocs) {
+          const identifier = (docItem.userId && docItem.userId !== 'anonimo') ? docItem.userId : (docItem.displayName || '')
+          const docCountry = (docItem.country ? String(docItem.country) : (docItem.userId === profileId.value ? targetCountry : '')).toUpperCase()
+          if (identifier && docCountry === targetCountry && !seenLocal.has(identifier)) {
             seenLocal.add(identifier)
-            uniqueLocal.push(doc)
+            uniqueLocal.push(docItem)
           }
         }
         const lIndex = uniqueLocal.findIndex(u => u.userId === profileId.value)
@@ -250,7 +250,7 @@ async function fetchProfileData() {
 }
 
 watch(() => route.params.id, (newId) => {
-  profileId.value = newId || user.value?.uid
+  profileId.value = (newId as string) || user.value?.uid || ''
   if (profileId.value) {
     fetchProfileData()
   } else {
@@ -266,7 +266,7 @@ watch(userProfile, (newVal) => {
         ...profileData.value,
         ...newVal,
         country: newVal.country || profileData.value?.country || ''
-      }
+      } as UserProfile
     }
   }
   // Si acabamos de loguearnos y estábamos en /perfil sin ID

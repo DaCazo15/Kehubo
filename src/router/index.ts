@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
@@ -58,11 +58,11 @@ const router = createRouter({
 })
 
 // Recuperación automática de chunks obsoletos en despliegues (Vite/SPA cache busting)
-router.onError((error, to) => {
+router.onError((error: any, to) => {
   const isChunkError = 
-    error.message?.includes('Failed to fetch dynamically imported module') ||
-    error.message?.includes('Importing a module script failed') ||
-    error.message?.includes('Expected a JavaScript-or-Wasm module script')
+    error?.message?.includes('Failed to fetch dynamically imported module') ||
+    error?.message?.includes('Importing a module script failed') ||
+    error?.message?.includes('Expected a JavaScript-or-Wasm module script')
 
   if (isChunkError) {
     const reloadKey = 'kehubo_chunk_reload_' + to.path

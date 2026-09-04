@@ -1,35 +1,30 @@
-<script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
 import gsap from 'gsap'
 
-const props = defineProps({
-  countdown: {
-    type: Number,
-    required: true
-  },
-  isCounting: {
-    type: Boolean,
-    required: true
-  },
-  isPaused: {
-    type: Boolean,
-    default: false
-  },
-  cartasVisibles: {
-    type: Boolean,
-    default: false
-  },
-  allowPause: {
-    type: Boolean,
-    default: true
+const props = withDefaults(
+  defineProps<{
+    countdown: number
+    isCounting: boolean
+    isPaused?: boolean
+    cartasVisibles?: boolean
+    allowPause?: boolean
+  }>(),
+  {
+    isPaused: false,
+    cartasVisibles: false,
+    allowPause: true
   }
-})
+)
 
-const emit = defineEmits(['pause', 'resume'])
+const emit = defineEmits<{
+  (e: 'pause'): void
+  (e: 'resume'): void
+}>()
 
-const numberRef = ref(null)
-const ringRef = ref(null)
-const isHovered = ref(false)
+const numberRef = ref<HTMLElement | null>(null)
+const ringRef = ref<SVGElement | null>(null)
+const isHovered = ref<boolean>(false)
 
 function handleMouseEnter() {
   if (!props.allowPause) return

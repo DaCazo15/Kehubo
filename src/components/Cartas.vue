@@ -1,20 +1,20 @@
-<script setup>
-const props = defineProps({
-  carta: {
-    type: Object,
-    required: true
-  },
-  tableroBloqueado: {
-    type: Boolean,
-    required: true
-  },
-  cardCount: {
-    type: Number,
-    default: 24
-  }
-})
+<script setup lang="ts">
+import type { Card } from '../types'
 
-const emit = defineEmits(['verificando'])
+const props = withDefaults(
+  defineProps<{
+    carta: Card
+    tableroBloqueado: boolean
+    cardCount?: number
+  }>(),
+  {
+    cardCount: 24
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'verificando', id: number): void
+}>()
 
 function handleClick() {
   if (!props.tableroBloqueado && !props.carta.revelada && !props.carta.encontrada) {

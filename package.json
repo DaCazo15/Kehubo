@@ -8,9 +8,10 @@
     "server": "node server/index.js",
     "dev:all": "concurrently -n \"VITE,SERVER,TEST\" -c \"cyan,magenta,green\" \"npm run dev\" \"npm run server\" \"npm run test:watch\"",
     "start": "npm run dev:all",
+    "type-check": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "vite build",
+    "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -33,11 +34,14 @@
     "vuefire": "^3.2.3"
   },
   "devDependencies": {
+    "@types/node": "^26.4.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/test-utils": "^2.5.0",
     "concurrently": "^10.0.5",
     "jsdom": "^30.0.1",
+    "typescript": "^5.9.3",
     "vite": "^7.2.4",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "vue-tsc": "^3.3.11"
   }
 }

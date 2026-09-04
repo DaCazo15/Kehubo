@@ -1,14 +1,21 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
-import { useCronometro } from './useCronometo.js'
+import { useCronometro } from './useCronometo'
 import { useCardDeck } from './useCardDeck'
 import { useGameTurn } from './useGameTurn'
 import { useCountdown } from './useCountdown'
 import { useAuth } from './useAuth'
 import { useNotificationStore } from '../stores/notifications'
 
-export function useGame(options = {}) {
+export interface UseGameOptions {
+  isCompetitive?: boolean
+  defaultCardCount?: number
+  defaultCartasVisibles?: boolean
+  autoStart?: boolean
+}
+
+export function useGame(options: UseGameOptions = {}) {
   const {
     isCompetitive = false,
     defaultCardCount = 24,
@@ -17,17 +24,17 @@ export function useGame(options = {}) {
   } = options
 
   // Opciones de partida
-  const cardCount = ref(defaultCardCount)
-  const cartasVisiblesAlInicio = ref(defaultCartasVisibles)
+  const cardCount = ref<number>(defaultCardCount)
+  const cartasVisiblesAlInicio = ref<boolean>(defaultCartasVisibles)
 
   // Estados de flujo del juego
-  const isConfiguring = ref(!autoStart)
-  const isGameOver = ref(false)
-  const isSavingScore = ref(false)
-  const scoreSaved = ref(false)
+  const isConfiguring = ref<boolean>(!autoStart)
+  const isGameOver = ref<boolean>(false)
+  const isSavingScore = ref<boolean>(false)
+  const scoreSaved = ref<boolean>(false)
 
   // Autenticación & Notificaciones
-  const { user, userProfile, userDisplayName, userAvatar, userCountry, isAuthenticated } = useAuth()
+  const { user, userProfile, userDisplayName, userAvatar, userCountry } = useAuth()
   const notificationStore = useNotificationStore()
 
   // Composables hijos
@@ -46,16 +53,16 @@ export function useGame(options = {}) {
     detenerCronometro 
   } = useCronometro()
 
-  const puntajeBase = ref(0)
-  const animatingScore = ref('')
-  const animatingTime = ref('')
+  const puntajeBase = ref<number>(0)
+  const animatingScore = ref<string>('')
+  const animatingTime = ref<string>('')
 
-  const triggerScoreAnimation = (type) => {
+  const triggerScoreAnimation = (type: string) => {
     animatingScore.value = type
     setTimeout(() => { animatingScore.value = '' }, 500)
   }
 
-  const triggerTimeAnimation = (type) => {
+  const triggerTimeAnimation = (type: string) => {
     animatingTime.value = type
     setTimeout(() => { animatingTime.value = '' }, 500)
   }
@@ -66,7 +73,7 @@ export function useGame(options = {}) {
     tableroBloqueado, 
     CartasPares 
   } = useGameTurn(numeros, {
-    onMatch: (isCorrect) => {
+    onMatch: (isCorrect: boolean) => {
       if (isCorrect) {
         puntajeBase.value += 10
         triggerScoreAnimation('correct')
@@ -101,9 +108,23 @@ export function useGame(options = {}) {
   })
 
   /**
+   * Arranca la partida tras finalizar el countdown
+   */
+  const arrancarPartida = () => {
+    // Si las cartas estaban visibles, se ocultan ahora
+    if (cartasVisiblesAlInicio.value) {
+      ocultarCartasNoEncontradas()
+    }
+
+    // Iniciar cronómetro y desbloquear tablero
+    iniciarCronometro()
+    tableroBloqueado.value = false
+  }
+
+  /**
    * Prepara el tablero e inicia la cuenta regresiva antes de arrancar la partida
    */
-  const iniciarPreparacion = (config = {}) => {
+  const iniciarPreparacion = (config: { cardCount?: number; cartasVisibles?: boolean } = {}) => {
     if (config.cardCount) cardCount.value = config.cardCount
     if (config.cartasVisibles !== undefined) cartasVisiblesAlInicio.value = config.cartasVisibles
 
@@ -128,20 +149,6 @@ export function useGame(options = {}) {
     startCountdown(5, () => {
       arrancarPartida()
     })
-  }
-
-  /**
-   * Arranca la partida tras finalizar el countdown
-   */
-  const arrancarPartida = () => {
-    // Si las cartas estaban visibles, se ocultan ahora
-    if (cartasVisiblesAlInicio.value) {
-      ocultarCartasNoEncontradas()
-    }
-
-    // Iniciar cronómetro y desbloquear tablero
-    iniciarCronometro()
-    tableroBloqueado.value = false
   }
 
   /**
@@ -221,10 +228,10 @@ export function useGame(options = {}) {
         const snap = await getDocs(q)
         if (!snap.empty) {
           const rivalScores = snap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
+            .map(d => ({ id: d.id, ...d.data() } as any))
             .filter(d => d.userId && d.userId !== 'anonimo' && d.userId !== uid)
 
-          const notifiedUserIds = new Set()
+          const notifiedUserIds = new Set<string>()
           for (const rival of rivalScores) {
             const rivalScore = Number(rival.score) || 0
             const rivalSeconds = Number(rival.seconds) || 9999

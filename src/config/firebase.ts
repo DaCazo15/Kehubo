@@ -13,7 +13,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const bucketUrl = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET
+const bucketUrl: string = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET
 
 export const firebaseApp = initializeApp(firebaseConfig)
 export const auth = getAuth(firebaseApp)

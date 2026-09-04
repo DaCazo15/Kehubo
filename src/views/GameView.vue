@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import Header from '../components/Header.vue'
 import Tablero from '../components/Tablero.vue'
@@ -6,7 +6,7 @@ import Cartas from '../components/Cartas.vue'
 import GameConfigModal from '../components/game/GameConfigModal.vue'
 import CountdownOverlay from '../components/game/CountdownOverlay.vue'
 import VictoryModal from '../components/game/VictoryModal.vue'
-import { useGame } from '../composables/useGame.js'
+import { useGame } from '../composables/useGame'
 
 const {
   // Configuración
@@ -59,7 +59,7 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4'
 })
 
-function onStartConfig(config) {
+function onStartConfig(config: { cardCount: number; cartasVisibles: boolean }) {
   iniciarPreparacion(config)
 }
 </script>

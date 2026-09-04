@@ -1,8 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { maleAvatars, femaleAvatars } from '../../helpers/avatars'
 import { countries } from '../../helpers/countries'
+import type { UserGender } from '../../types'
 
 const {
   isAuthModalOpen,
@@ -16,13 +17,13 @@ const {
   loginWithGoogle
 } = useAuth()
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const genero = ref('hombre') // 'hombre' | 'mujer'
-const country = ref('') // código de país
-const localError = ref('')
+const name = ref<string>('')
+const email = ref<string>('')
+const password = ref<string>('')
+const confirmPassword = ref<string>('')
+const genero = ref<UserGender>('hombre')
+const country = ref<string>('')
+const localError = ref<string>('')
 
 // Limpiar formulario cuando se abre o cambia de modo
 watch([isAuthModalOpen, authMode], () => {
@@ -35,7 +36,7 @@ watch([isAuthModalOpen, authMode], () => {
   localError.value = ''
 })
 
-function handleKeydown(e) {
+function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isAuthModalOpen.value) {
     closeAuthModal()
   }

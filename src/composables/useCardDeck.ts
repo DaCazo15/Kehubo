@@ -1,9 +1,10 @@
 import { ref, computed } from 'vue'
+import type { Card } from '../types'
 
 export function useCardDeck(totalCartasInicial = 24) {
-  const totalCartas = ref(totalCartasInicial)
+  const totalCartas = ref<number>(totalCartasInicial)
   const totalPares = computed(() => Math.floor(totalCartas.value / 2))
-  const numeros = ref([])
+  const numeros = ref<Card[]>([])
 
   /**
    * Genera el mazo de cartas duplicadas según la cantidad seleccionada (24, 32, 40)
@@ -11,9 +12,9 @@ export function useCardDeck(totalCartasInicial = 24) {
    * 32 cartas = 16 pares (1..16)
    * 40 cartas = 20 pares (1..20)
    */
-  const generarNumerosBase = (cantidad) => {
+  const generarNumerosBase = (cantidad: number): number[] => {
     const paresCount = Math.floor(cantidad / 2)
-    const base = []
+    const base: number[] = []
     for (let i = 1; i <= paresCount; i++) {
       base.push(i, i)
     }
@@ -22,8 +23,8 @@ export function useCardDeck(totalCartasInicial = 24) {
 
   /**
    * Inicializa el array de cartas.
-   * @param {number} cantidad - Total de cartas (24, 32, 40)
-   * @param {boolean} cartasVisibles - Si las cartas nacen reveladas o no
+   * @param cantidad - Total de cartas (24, 32, 40)
+   * @param cartasVisibles - Si las cartas nacen reveladas o no
    */
   const inicializarCartas = (cantidad = totalCartas.value, cartasVisibles = false) => {
     totalCartas.value = cantidad

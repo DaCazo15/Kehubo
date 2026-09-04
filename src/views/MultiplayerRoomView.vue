@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMultiplayerRoom } from '../composables/useMultiplayerRoom'
@@ -11,10 +11,12 @@ import Cartas from '../components/Cartas.vue'
 import Tablero from '../components/Tablero.vue'
 import Header from '../components/Header.vue'
 import { getCountryName } from '../helpers/countries'
+import type { Card } from '../types'
+import type { Unsubscribe } from 'firebase/firestore'
 
 const route = useRoute()
 const router = useRouter()
-const roomId = ref(route.params.roomId)
+const roomId = ref<string>(route.params.roomId as string)
 
 const {
   currentRoom,
@@ -36,16 +38,16 @@ const currentPlayer = ref(getCurrentPlayerData())
 const isHost = computed(() => currentRoom.value?.hostId === currentPlayer.value.uid)
 
 // Estado del juego local
-const cartas = ref([])
-const CartasSeleccionadas = ref([])
-const CartasPares = ref([])
-const tableroBloqueado = ref(true)
-const localScore = ref(0)
-const animatingScore = ref('')
-const animatingTime = ref('')
-const isPodiumOpen = ref(false)
-const copiedCode = ref(false)
-const copiedLink = ref(false)
+const cartas = ref<Card[]>([])
+const CartasSeleccionadas = ref<Card[]>([])
+const CartasPares = ref<number[]>([])
+const tableroBloqueado = ref<boolean>(true)
+const localScore = ref<number>(0)
+const animatingScore = ref<string>('')
+const animatingTime = ref<string>('')
+const isPodiumOpen = ref<boolean>(false)
+const copiedCode = ref<boolean>(false)
+const copiedLink = ref<boolean>(false)
 
 const { 
   tiempo, 
@@ -80,8 +82,8 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4'
 })
 
-let unsubRoom = null
-let unsubPlayers = null
+let unsubRoom: Unsubscribe | (() => void) | null = null
+let unsubPlayers: Unsubscribe | (() => void) | null = null
 
 // Copiar código de sala
 function copyCode() {
@@ -133,8 +135,10 @@ function startMultiplayerMatch() {
 }
 
 // Turno de selección y verificación de cartas (con resolución segura de mazo en servidor)
-async function verificar(carta) {
-  if (tableroBloqueado.value || carta.revelada || carta.encontrada) return
+async function verificar(cardOrId: Card | number) {
+  const cardId = typeof cardOrId === 'number' ? cardOrId : cardOrId.id
+  const carta = cartas.value.find(c => c.id === cardId)
+  if (!carta || tableroBloqueado.value || carta.revelada || carta.encontrada) return
 
   // Si el valor no está presente localmente (mazo secreto en servidor), obtenerlo bajo demanda
   if (carta.valor === null || carta.valor === undefined) {
@@ -163,7 +167,7 @@ async function verificar(carta) {
       // Acierto
       c1.encontrada = true
       c2.encontrada = true
-      CartasPares.value.push(c1.valor)
+      CartasPares.value.push(c1.valor!)
       localScore.value += 10
 
       animatingScore.value = 'correct'
@@ -229,12 +233,26 @@ async function verificar(carta) {
 }
 
 // Configuración de la sala por el moderador
-function handleConfigChange(count, visible) {
+function handleConfigChange(count: number, visible: boolean) {
   if (!isHost.value) return
   updateRoomConfig(roomId.value, {
     cardCount: count,
     cartasVisibles: visible
   })
+}
+
+function onCardCountChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  if (target) {
+    handleConfigChange(Number(target.value), cartasVisiblesAlInicio.value)
+  }
+}
+
+function onCartasVisiblesChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  if (target) {
+    handleConfigChange(cardCount.value, target.value === 'true')
+  }
 }
 
 // Iniciar juego en la sala
@@ -262,7 +280,9 @@ onMounted(async () => {
     return
   }
 
-  roomId.value = joinRes.roomId
+  if (joinRes.roomId) {
+    roomId.value = joinRes.roomId
+  }
 
   // Escuchar estado de la sala
   unsubRoom = listenToRoom(roomId.value, (room) => {
@@ -288,8 +308,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (unsubRoom) unsubRoom()
-  if (unsubPlayers) unsubPlayers()
+  if (unsubRoom) (unsubRoom as any)()
+  if (unsubPlayers) (unsubPlayers as any)()
 })
 </script>
 
@@ -458,7 +478,7 @@ onUnmounted(() => {
               <label class="block text-slate-400 font-bold mb-1">Dificultad:</label>
               <select
                 :value="cardCount"
-                @change="handleConfigChange(Number($event.target.value), cartasVisiblesAlInicio)"
+                @change="onCardCountChange"
                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none focus:border-amber-400"
               >
                 <option :value="16">16 Cartas (8 pares)</option>
@@ -472,7 +492,7 @@ onUnmounted(() => {
               <label class="block text-slate-400 font-bold mb-1">Cartas al Inicio:</label>
               <select
                 :value="cartasVisiblesAlInicio"
-                @change="handleConfigChange(cardCount, $event.target.value === 'true')"
+                @change="onCartasVisiblesChange"
                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-bold outline-none focus:border-amber-400"
               >
                 <option :value="false">Ocultas (Modo Normal)</option>

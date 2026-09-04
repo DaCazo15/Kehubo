@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import Header from '../components/Header.vue'
 import Tablero from '../components/Tablero.vue'
 import Cartas from '../components/Cartas.vue'
 import CountdownOverlay from '../components/game/CountdownOverlay.vue'
 import VictoryModal from '../components/game/VictoryModal.vue'
-import { useGame } from '../composables/useGame.js'
+import { useGame } from '../composables/useGame'
 
 const {
   // Configuración

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { img } from '../../helpers/imagenes'
@@ -15,10 +15,10 @@ const {
   logout 
 } = useAuth()
 
-const isScrolled = ref(false)
-const isMobileMenuOpen = ref(false)
-const isUserDropdownOpen = ref(false)
-const avatarError = ref(false)
+const isScrolled = ref<boolean>(false)
+const isMobileMenuOpen = ref<boolean>(false)
+const isUserDropdownOpen = ref<boolean>(false)
+const avatarError = ref<boolean>(false)
 
 watch(userAvatar, () => {
   avatarError.value = false
@@ -28,7 +28,7 @@ function handleScroll() {
   isScrolled.value = window.scrollY > 20
 }
 
-function handleNav(path) {
+function handleNav(path: string) {
   isMobileMenuOpen.value = false
   router.push(path)
 }

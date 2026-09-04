@@ -6,7 +6,8 @@ import {
   signInWithPopup, 
   updateProfile, 
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  type User as FirebaseUser 
 } from 'firebase/auth'
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { 
@@ -18,18 +19,19 @@ import {
 import { auth, googleProvider, db, storage } from '../config/firebase'
 import { getDefaultAvatarByGender } from '../helpers/avatars'
 import { compressImageToAvif } from '../helpers/imageCompressor'
-import { countries, detectCountryFromIP } from '../helpers/countries'
+import { detectCountryFromIP } from '../helpers/countries'
+import type { UserProfile, UserGender } from '../types'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null)
-  const userProfile = ref(null)
-  const loading = ref(false)
-  const authError = ref(null)
-  const isAuthModalOpen = ref(false)
-  const authMode = ref('login') // 'login' | 'register'
-  const isInitialized = ref(false)
+  const user = ref<FirebaseUser | null>(null)
+  const userProfile = ref<UserProfile | null>(null)
+  const loading = ref<boolean>(false)
+  const authError = ref<string | null>(null)
+  const isAuthModalOpen = ref<boolean>(false)
+  const authMode = ref<'login' | 'register'>('login')
+  const isInitialized = ref<boolean>(false)
 
-  const isAuthenticated = computed(() => !!user.value)
+  const isAuthenticated = computed(() => !user.value)
   
   const userDisplayName = computed(() => {
     if (userProfile.value?.displayName) return userProfile.value.displayName
@@ -42,8 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.photoURL || null
   })
 
-  const userGender = computed(() => {
-    return userProfile.value?.genero || 'hombre'
+  const userGender = computed<UserGender>(() => {
+    return (userProfile.value?.genero as UserGender) || 'hombre'
   })
 
   const userCountry = computed(() => {
@@ -67,7 +69,7 @@ export const useAuthStore = defineStore('auth', () => {
     return googleProviderData?.photoURL || null
   })
 
-  function openAuthModal(mode = 'login') {
+  function openAuthModal(mode: 'login' | 'register' = 'login') {
     authMode.value = mode
     authError.value = null
     isAuthModalOpen.value = true
@@ -83,7 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
     authError.value = null
   }
 
-  function formatFirebaseError(error) {
+  function formatFirebaseError(error: any): string | null {
     const code = error?.code || ''
 
     // Ignorar si el usuario simplemente cerró o canceló la ventana de Google
@@ -116,7 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Cargar o crear perfil en Firestore
-  async function fetchOrCreateUserProfile(firebaseUser, extraData = {}) {
+  async function fetchOrCreateUserProfile(firebaseUser: FirebaseUser | null, extraData: Partial<UserProfile> = {}): Promise<UserProfile | null> {
     if (!firebaseUser) {
       userProfile.value = null
       return null
@@ -133,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       if (userDocSnap.exists()) {
-        const data = userDocSnap.data()
+        const data = userDocSnap.data() as Partial<UserProfile>
         const resolvedCountry = (data.country || detectedCountry || '').toUpperCase()
 
         if (resolvedCountry && typeof window !== 'undefined') {
@@ -147,23 +149,23 @@ export const useAuthStore = defineStore('auth', () => {
 
         userProfile.value = {
           uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: data.displayName || firebaseUser.displayName,
-          photoURL: data.photoURL || firebaseUser.photoURL,
-          genero: data.genero || 'hombre',
+          email: firebaseUser.email || '',
+          displayName: data.displayName || firebaseUser.displayName || '',
+          photoURL: data.photoURL || firebaseUser.photoURL || null,
+          genero: (data.genero as UserGender) || 'hombre',
           country: resolvedCountry,
           googlePhotoURL: data.googlePhotoURL || (extraData.authProvider === 'google' ? firebaseUser.photoURL : null),
-          authProvider: data.authProvider || (firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password'),
+          authProvider: (data.authProvider as any) || (firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password'),
           createdAt: data.createdAt || new Date().toISOString(),
           bestTime: data.bestTime || '--:--',
-          bestSeconds: data.bestSeconds || null,
+          bestSeconds: data.bestSeconds ?? null,
           friendsCount: data.friendsCount || 0,
           avatarStoragePath: data.avatarStoragePath || null
         }
       } else {
         const isGoogle = extraData.authProvider === 'google' || firebaseUser.providerData?.some(p => p.providerId === 'google.com')
         const initialAvatar = isGoogle 
-          ? firebaseUser.photoURL 
+          ? (firebaseUser.photoURL || null)
           : (extraData.photoURL || getDefaultAvatarByGender(extraData.genero || 'hombre'))
 
         const finalCountry = (detectedCountry || '').toUpperCase()
@@ -171,12 +173,12 @@ export const useAuthStore = defineStore('auth', () => {
           localStorage.setItem('kehubo_user_country', finalCountry)
         }
 
-        const newProfile = {
+        const newProfile: UserProfile = {
           uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: extraData.displayName || firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          email: firebaseUser.email || '',
+          displayName: extraData.displayName || firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Guerrero'),
           photoURL: initialAvatar,
-          genero: extraData.genero || 'hombre',
+          genero: (extraData.genero as UserGender) || 'hombre',
           country: finalCountry,
           googlePhotoURL: isGoogle ? firebaseUser.photoURL : null,
           authProvider: isGoogle ? 'google' : 'password',
@@ -203,7 +205,7 @@ export const useAuthStore = defineStore('auth', () => {
         syncUserScoresInFirestore(firebaseUser.uid, {
           country: userProfile.value.country,
           displayName: userProfile.value.displayName,
-          photoURL: userProfile.value.photoURL
+          photoURL: userProfile.value.photoURL || ''
         }).catch(() => {})
       }
 
@@ -212,13 +214,13 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('Firestore user profile sync error (falling back to Auth profile):', e)
       userProfile.value = {
         uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || extraData.displayName,
+        email: firebaseUser.email || '',
+        displayName: firebaseUser.displayName || extraData.displayName || '',
         photoURL: firebaseUser.photoURL || extraData.photoURL || getDefaultAvatarByGender(extraData.genero || 'hombre'),
-        genero: extraData.genero || 'hombre',
+        genero: (extraData.genero as UserGender) || 'hombre',
         country: (extraData.country || '').toUpperCase(),
         googlePhotoURL: firebaseUser.providerData?.find(p => p.providerId === 'google.com')?.photoURL || null,
-        authProvider: firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password',
+        authProvider: (firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password'),
         createdAt: new Date().toISOString(),
         bestTime: '--:--',
         bestSeconds: null,
@@ -230,7 +232,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Sincroniza todas las partidas registradas por el usuario en 'scores'
-  async function syncUserScoresInFirestore(uid, { country, displayName, photoURL }) {
+  async function syncUserScoresInFirestore(uid: string, dataUpdates: { country?: string; displayName?: string; photoURL?: string }) {
     if (!uid || uid === 'anonimo') return
     try {
       const scoresRef = collection(db, 'scores')
@@ -239,14 +241,14 @@ export const useAuthStore = defineStore('auth', () => {
       if (!snap.empty) {
         const batchPromises = snap.docs.map(docSnap => {
           const data = docSnap.data()
-          const needsUpdate = (Boolean(country) && data.country !== country) ||
-                              (Boolean(displayName) && data.displayName !== displayName) ||
-                              (Boolean(photoURL) && data.photoURL !== photoURL)
+          const needsUpdate = (Boolean(dataUpdates.country) && data.country !== dataUpdates.country) ||
+                              (Boolean(dataUpdates.displayName) && data.displayName !== dataUpdates.displayName) ||
+                              (Boolean(dataUpdates.photoURL) && data.photoURL !== dataUpdates.photoURL)
           if (needsUpdate) {
-            const updates = {}
-            if (country) updates.country = country
-            if (displayName) updates.displayName = displayName
-            if (photoURL) updates.photoURL = photoURL
+            const updates: Record<string, any> = {}
+            if (dataUpdates.country) updates.country = dataUpdates.country
+            if (dataUpdates.displayName) updates.displayName = dataUpdates.displayName
+            if (dataUpdates.photoURL) updates.photoURL = dataUpdates.photoURL
             return updateDoc(docSnap.ref, updates)
           }
           return Promise.resolve()
@@ -259,8 +261,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Control de Seguridad Anti-Fuerza Bruta y Prevención de Abusos
-  const failedAttempts = ref(0)
-  const lockoutUntil = ref(null)
+  const failedAttempts = ref<number>(0)
+  const lockoutUntil = ref<number | null>(null)
 
   function checkBruteForceLockout() {
     if (lockoutUntil.value) {
@@ -290,12 +292,12 @@ export const useAuthStore = defineStore('auth', () => {
     lockoutUntil.value = null
   }
 
-  function sanitizeInput(text) {
+  function sanitizeInput(text: string): string {
     if (typeof text !== 'string') return ''
     return text.replace(/[<>]/g, '').trim().slice(0, 30)
   }
 
-  async function loginWithEmail(email, password) {
+  async function loginWithEmail(email: string, password: string) {
     if (checkBruteForceLockout()) {
       return { success: false, error: authError.value }
     }
@@ -312,7 +314,7 @@ export const useAuthStore = defineStore('auth', () => {
       resetFailedAttempts()
       closeAuthModal()
       return { success: true, user: userCredential.user }
-    } catch (err) {
+    } catch (err: any) {
       recordFailedAttempt()
       console.error('Error al iniciar sesión:', err)
       if (!authError.value) {
@@ -324,7 +326,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function registerWithEmail(name, email, password, genero = 'hombre', country = '') {
+  async function registerWithEmail(name: string, email: string, password: string, genero: UserGender = 'hombre', country = '') {
     if (checkBruteForceLockout()) {
       return { success: false, error: authError.value }
     }
@@ -358,7 +360,7 @@ export const useAuthStore = defineStore('auth', () => {
       resetFailedAttempts()
       closeAuthModal()
       return { success: true, user: auth.currentUser }
-    } catch (err) {
+    } catch (err: any) {
       recordFailedAttempt()
       console.error('Error al registrar usuario:', err)
       if (!authError.value) {
@@ -389,7 +391,7 @@ export const useAuthStore = defineStore('auth', () => {
       resetFailedAttempts()
       closeAuthModal()
       return { success: true, user: result.user }
-    } catch (err) {
+    } catch (err: any) {
       const formatted = formatFirebaseError(err)
       authError.value = formatted
       if (formatted) {
@@ -402,24 +404,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function updateUserProfileData({ displayName, photoURL, genero, country, avatarStoragePath }) {
+  async function updateUserProfileData(updates: Partial<UserProfile>) {
     if (loading.value) return { success: false }
     loading.value = true
     authError.value = null
     try {
-      const sanitizedDisplayName = displayName !== undefined ? sanitizeInput(displayName) : undefined
-      const updates = {}
-      if (sanitizedDisplayName !== undefined) updates.displayName = sanitizedDisplayName
-      if (photoURL !== undefined) updates.photoURL = photoURL
-      if (genero !== undefined) updates.genero = genero
-      if (country !== undefined) updates.country = country
-      if (avatarStoragePath !== undefined) updates.avatarStoragePath = avatarStoragePath
+      const sanitizedDisplayName = updates.displayName !== undefined ? sanitizeInput(updates.displayName) : undefined
+      const sanitizedUpdates: Record<string, any> = {}
+      if (sanitizedDisplayName !== undefined) sanitizedUpdates.displayName = sanitizedDisplayName
+      if (updates.photoURL !== undefined) sanitizedUpdates.photoURL = updates.photoURL
+      if (updates.genero !== undefined) sanitizedUpdates.genero = updates.genero
+      if (updates.country !== undefined) sanitizedUpdates.country = updates.country
+      if (updates.avatarStoragePath !== undefined) sanitizedUpdates.avatarStoragePath = updates.avatarStoragePath
 
       // 1. Actualizar Firebase Auth User
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {
           displayName: sanitizedDisplayName !== undefined ? sanitizedDisplayName : auth.currentUser.displayName,
-          photoURL: photoURL !== undefined ? photoURL : auth.currentUser.photoURL
+          photoURL: updates.photoURL !== undefined ? updates.photoURL : auth.currentUser.photoURL
         })
       }
 
@@ -427,7 +429,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (user.value?.uid) {
         try {
           const userRef = doc(db, 'users', user.value.uid)
-          await updateDoc(userRef, updates)
+          await updateDoc(userRef, sanitizedUpdates)
         } catch (e) {
           console.warn('Could not update Firestore document:', e)
         }
@@ -437,25 +439,25 @@ export const useAuthStore = defineStore('auth', () => {
       if (userProfile.value) {
         userProfile.value = {
           ...userProfile.value,
-          ...updates
+          ...sanitizedUpdates
         }
       }
 
-      if (updates.country && typeof window !== 'undefined') {
-        localStorage.setItem('kehubo_user_country', updates.country.toUpperCase())
+      if (sanitizedUpdates.country && typeof window !== 'undefined') {
+        localStorage.setItem('kehubo_user_country', sanitizedUpdates.country.toUpperCase())
       }
 
       // 4. Sincronizar partidas previas en la colección 'scores'
       if (user.value?.uid) {
         syncUserScoresInFirestore(user.value.uid, {
-          country: updates.country,
-          displayName: updates.displayName,
-          photoURL: updates.photoURL
+          country: sanitizedUpdates.country,
+          displayName: sanitizedUpdates.displayName,
+          photoURL: sanitizedUpdates.photoURL
         }).catch(() => {})
       }
 
       return { success: true }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al actualizar perfil:', err)
       authError.value = 'No se pudo actualizar el perfil. Intenta nuevamente.'
       return { success: false, error: authError.value }
@@ -467,7 +469,7 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Sube una foto de perfil personalizada a Firebase Storage y elimina la anterior si existía
    */
-  async function uploadCustomAvatar(file) {
+  async function uploadCustomAvatar(file: File) {
     if (!user.value || !file) {
       return { success: false, error: 'Usuario no autenticado o archivo inválido.' }
     }
@@ -492,7 +494,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { file: processedFile, isAvif } = await compressImageToAvif(file)
 
       // 3. Subir archivo optimizado a Firebase Storage
-      const ext = isAvif ? 'avif' : (processedFile.name?.split('.').pop() || 'png')
+      const ext = isAvif ? 'avif' : ((processedFile as File).name?.split('.').pop() || 'png')
       const newStoragePath = `avatars/${user.value.uid}/avatar_${Date.now()}.${ext}`
       const newRef = storageRef(storage, newStoragePath)
       
@@ -508,7 +510,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       return { success: true, url: downloadURL, storagePath: newStoragePath }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al subir avatar a Firebase Storage:', err)
       authError.value = 'Error al subir la imagen al almacenamiento.'
       return { success: false, error: authError.value }

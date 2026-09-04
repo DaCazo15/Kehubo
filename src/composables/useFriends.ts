@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { 
   collection, 
   doc, 
@@ -10,21 +10,22 @@ import {
   query, 
   where, 
   serverTimestamp, 
-  updateDoc,
-  increment,
-  addDoc
+  updateDoc, 
+  increment, 
+  addDoc,
+  type Unsubscribe 
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from './useAuth'
+import type { FriendItem, NotificationItem } from '../types'
 
 export function useFriends() {
   const { user, userDisplayName, userAvatar, userCountry } = useAuth()
-  const friends = ref([])
-  const loading = ref(false)
-  let unsubscribe = null
+  const friends = ref<FriendItem[]>([])
+  const loading = ref<boolean>(false)
 
   // Escuchar amigos en tiempo real de un usuario específico
-  function listenToUserFriends(userId, callback) {
+  function listenToUserFriends(userId: string | undefined | null, callback?: (list: FriendItem[]) => void): Unsubscribe | (() => void) {
     if (!userId || userId === 'anonimo') {
       friends.value = []
       if (callback) callback([])
@@ -38,7 +39,7 @@ export function useFriends() {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         ...docSnap.data()
-      }))
+      })) as FriendItem[]
 
       // Ordenar por fecha de amistad desc
       list.sort((a, b) => {
@@ -57,7 +58,7 @@ export function useFriends() {
   }
 
   // Comprobar el estado de amistad entre el usuario actual y otro usuario
-  async function checkFriendshipStatus(targetUserId) {
+  async function checkFriendshipStatus(targetUserId: string): Promise<string | { status: string; notificationId: string }> {
     const currentUid = user.value?.uid
     if (!currentUid || currentUid === 'anonimo') return 'unauthenticated'
     if (currentUid === targetUserId) return 'own'
@@ -105,7 +106,7 @@ export function useFriends() {
   }
 
   // Enviar solicitud de amistad
-  async function sendFriendRequest(targetUser) {
+  async function sendFriendRequest(targetUser: { uid: string; displayName?: string }) {
     const currentUid = user.value?.uid
     if (!currentUid || currentUid === 'anonimo') {
       return { success: false, error: 'Debes iniciar sesión para enviar solicitudes.' }
@@ -154,7 +155,7 @@ export function useFriends() {
   }
 
   // Aceptar solicitud de amistad
-  async function acceptFriendRequest(notification) {
+  async function acceptFriendRequest(notification: Partial<NotificationItem>) {
     const currentUid = user.value?.uid
     if (!currentUid || !notification?.senderUserId) return { success: false }
 
@@ -226,7 +227,7 @@ export function useFriends() {
   }
 
   // Rechazar solicitud de amistad
-  async function rejectFriendRequest(notification) {
+  async function rejectFriendRequest(notification: Partial<NotificationItem>) {
     if (!notification?.id) return { success: false }
     try {
       const notifRef = doc(db, 'notifications', notification.id)
@@ -242,7 +243,7 @@ export function useFriends() {
   }
 
   // Eliminar amistad
-  async function removeFriend(friendId) {
+  async function removeFriend(friendId: string) {
     const currentUid = user.value?.uid
     if (!currentUid || !friendId) return { success: false }
 

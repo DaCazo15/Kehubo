@@ -1,28 +1,25 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getCountryName } from '../../helpers/countries'
+import type { RoomPlayer } from '../../types'
 
-const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    required: true
-  },
-  players: {
-    type: Array,
-    required: true
-  },
-  currentUserId: {
-    type: String,
-    required: true
-  },
-  isHost: {
-    type: Boolean,
-    default: false
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean
+    players: RoomPlayer[]
+    currentUserId: string
+    isHost?: boolean
+  }>(),
+  {
+    isHost: false
   }
-})
+)
 
-const emit = defineEmits(['play-again', 'leave'])
+const emit = defineEmits<{
+  (e: 'play-again'): void
+  (e: 'leave'): void
+}>()
 
 const winner = computed(() => props.players[0] || null)
 const isCurrentWinner = computed(() => winner.value?.uid === props.currentUserId)

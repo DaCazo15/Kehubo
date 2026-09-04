@@ -1,21 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { collection, onSnapshot, query, where, limit } from 'firebase/firestore'
+import { collection, onSnapshot, query, limit, type Unsubscribe } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from '../composables/useAuth'
 import { getCountryName } from '../helpers/countries'
+import type { ScoreRecord } from '../types'
 
 const { user, userCountry, isAuthenticated, openAuthModal, syncUserScoresInFirestore } = useAuth()
 const router = useRouter()
 
-const leaderboard = ref([])
-const loading = ref(true)
-const rankingType = ref('global') // 'global' | 'local'
-const locationError = ref('')
-let unsubscribe = null
+const leaderboard = ref<ScoreRecord[]>([])
+const loading = ref<boolean>(true)
+const rankingType = ref<'global' | 'local'>('global')
+const locationError = ref<string>('')
+let unsubscribe: Unsubscribe | (() => void) | null = null
 
-function getPlayerCountry(player) {
+function getPlayerCountry(player: any): string {
   if (!player) return ''
   if (player.country) return String(player.country).toUpperCase()
   if (player.userId && player.userId === user.value?.uid && userCountry.value) {
@@ -25,7 +26,7 @@ function getPlayerCountry(player) {
 }
 
 function listenToLeaderboard() {
-  if (unsubscribe) unsubscribe()
+  if (unsubscribe) (unsubscribe as any)()
   loading.value = true
   try {
     // Si el usuario está autenticado y tiene país, aseguramos que sus partidas históricas tengan el país asignado
@@ -37,13 +38,13 @@ function listenToLeaderboard() {
     const q = query(scoresRef, limit(150))
     
     unsubscribe = onSnapshot(q, (snap) => {
-      const rawDocs = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      const rawDocs = snap.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      })) as ScoreRecord[]
 
       // Mapear países conocidos de los usuarios en la consulta
-      const userCountryMap = new Map()
+      const userCountryMap = new Map<string, string>()
       const currentUid = user.value?.uid
       const currentCountry = userCountry.value ? userCountry.value.toUpperCase() : ''
 
@@ -51,10 +52,10 @@ function listenToLeaderboard() {
         userCountryMap.set(currentUid, currentCountry)
       }
 
-      for (const doc of rawDocs) {
-        const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
-        if (doc.country && !userCountryMap.has(identifier)) {
-          userCountryMap.set(identifier, String(doc.country).toUpperCase())
+      for (const docItem of rawDocs) {
+        const identifier = (docItem.userId && docItem.userId !== 'anonimo') ? docItem.userId : (docItem.displayName || '')
+        if (identifier && docItem.country && !userCountryMap.has(identifier)) {
+          userCountryMap.set(identifier, String(docItem.country).toUpperCase())
         }
       }
 
@@ -70,15 +71,15 @@ function listenToLeaderboard() {
         return secA - secB
       })
 
-      const uniqueDocs = []
-      const seenUsers = new Set()
+      const uniqueDocs: ScoreRecord[] = []
+      const seenUsers = new Set<string>()
       const isLocal = rankingType.value === 'local'
 
-      for (const doc of rawDocs) {
-        const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
-        if (!seenUsers.has(identifier)) {
-          let resolvedCountry = doc.country ? String(doc.country).toUpperCase() : (userCountryMap.get(identifier) || '')
-          if (!resolvedCountry && doc.userId === currentUid && currentCountry) {
+      for (const docItem of rawDocs) {
+        const identifier = (docItem.userId && docItem.userId !== 'anonimo') ? docItem.userId : (docItem.displayName || '')
+        if (identifier && !seenUsers.has(identifier)) {
+          let resolvedCountry = docItem.country ? String(docItem.country).toUpperCase() : (userCountryMap.get(identifier) || '')
+          if (!resolvedCountry && docItem.userId === currentUid && currentCountry) {
             resolvedCountry = currentCountry
           }
 
@@ -91,7 +92,7 @@ function listenToLeaderboard() {
 
           seenUsers.add(identifier)
           uniqueDocs.push({
-            ...doc,
+            ...docItem,
             country: resolvedCountry
           })
         }
@@ -131,7 +132,7 @@ onMounted(() => {
   listenToLeaderboard()
 })
 
-function goToProfile(userId) {
+function goToProfile(userId?: string) {
   if (userId && userId !== 'anonimo') {
     router.push({ name: 'perfil', params: { id: userId } })
   }
@@ -150,7 +151,7 @@ function handleLocalClick() {
 }
 
 onUnmounted(() => {
-  if (unsubscribe) unsubscribe()
+  if (unsubscribe) (unsubscribe as any)()
 })
 </script>
 
@@ -376,13 +377,13 @@ onUnmounted(() => {
                     <span 
                       class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs"
                       :class="{
-                        'bg-amber-500/20 text-amber-300 border border-amber-500/40': player.rank === 1,
-                        'bg-slate-300/20 text-slate-200 border border-slate-400/40': player.rank === 2,
-                        'bg-amber-800/20 text-amber-500 border border-amber-700/40': player.rank === 3,
-                        'text-slate-400': player.rank > 3
+                        'bg-amber-500/20 text-amber-300 border border-amber-500/40': (player.rank ?? 0) === 1,
+                        'bg-slate-300/20 text-slate-200 border border-slate-400/40': (player.rank ?? 0) === 2,
+                        'bg-amber-800/20 text-amber-500 border border-amber-700/40': (player.rank ?? 0) === 3,
+                        'text-slate-400': (player.rank ?? 0) > 3
                       }"
                     >
-                      #{{ player.rank }}
+                      #{{ player.rank ?? 0 }}
                     </span>
                   </td>
                   <td class="py-4 px-6 font-bold text-slate-100">

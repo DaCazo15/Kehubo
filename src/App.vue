@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Navbar from './components/landing/Navbar.vue'
@@ -25,13 +25,17 @@ watch(user, (currentUser) => {
   }
 }, { immediate: true })
 
-const isGameView = computed(() => ['game', 'game-rapido', 'multiplayer-room'].includes(route.name))
+const isGameView = computed(() => {
+  const name = String(route.name || '')
+  return ['game', 'game-rapido', 'multiplayer-room'].includes(name)
+})
 
 // Si el usuario está en el perfil o en ranking estando autenticado, o navegando autenticado en vistas no-landing,
 // mantenemos el ProfileNavbar activo para que nunca pierda el botón de su perfil.
 const showProfileNavbar = computed(() => {
   if (isGameView.value) return false
-  return route.name === 'perfil' || (route.name === 'ranking' && isAuthenticated.value) || (isAuthenticated.value && route.name !== 'home')
+  const name = String(route.name || '')
+  return name === 'perfil' || (name === 'ranking' && isAuthenticated.value) || (isAuthenticated.value && name !== 'home')
 })
 
 const showLandingNavbar = computed(() => {

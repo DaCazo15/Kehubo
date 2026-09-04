@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { img } from '../../helpers/imagenes'
@@ -16,8 +16,8 @@ const {
   logout 
 } = useAuth()
 
-const isMobileMenuOpen = ref(false)
-const avatarError = ref(false)
+const isMobileMenuOpen = ref<boolean>(false)
+const avatarError = ref<boolean>(false)
 
 const isProfileActive = computed(() => route.path.startsWith('/perfil'))
 const isRankingActive = computed(() => route.path === '/ranking')

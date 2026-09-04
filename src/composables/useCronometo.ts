@@ -1,8 +1,8 @@
 import { ref, onUnmounted, computed } from 'vue'
 
 export function useCronometro() {
-  const tiempo = ref(0)
-  let stopCronometro = null
+  const tiempo = ref<number>(0)
+  let stopCronometro: (() => void) | null = null
 
   const iniciarCronometro = () => {
     detenerCronometro()

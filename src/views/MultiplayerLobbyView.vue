@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useMultiplayerRoom } from '../composables/useMultiplayerRoom'
@@ -9,12 +9,12 @@ const { createRoom, joinRoom, loading, error } = useMultiplayerRoom()
 const { isAuthenticated, openAuthModal } = useAuth()
 
 // Configuración para nueva sala
-const cardCount = ref(24)
-const cartasVisibles = ref(false)
+const cardCount = ref<number>(24)
+const cartasVisibles = ref<boolean>(false)
 
 // Input de código para unirse
-const inputCode = ref('')
-const activeTab = ref('create') // 'create' | 'join'
+const inputCode = ref<string>('')
+const activeTab = ref<'create' | 'join'>('create')
 
 const difficulties = [
   { count: 16, label: '16 Cartas', desc: '8 pares • Rápido', cols: 'Grid 4x4' },

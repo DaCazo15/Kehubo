@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import {
   collection,
   doc,
@@ -10,22 +10,25 @@ import {
   onSnapshot,
   query,
   where,
-  serverTimestamp
+  serverTimestamp,
+  type Unsubscribe,
+  type DocumentSnapshot
 } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '../config/firebase'
 import { useAuth } from './useAuth'
+import type { Room, RoomPlayer, RoomConfig, Card } from '../types'
 
 export function useMultiplayerRoom() {
-  const { user, userDisplayName, userAvatar, userCountry, isAuthenticated } = useAuth()
+  const { user, userDisplayName, userAvatar, userCountry } = useAuth()
   
-  const currentRoom = ref(null)
-  const roomPlayers = ref([])
-  const loading = ref(false)
-  const error = ref(null)
+  const currentRoom = ref<Room | null>(null)
+  const roomPlayers = ref<RoomPlayer[]>([])
+  const loading = ref<boolean>(false)
+  const error = ref<string | null>(null)
 
   // Genera un código de sala aleatorio de 6 caracteres (ej. KH-8392)
-  function generateRoomCode() {
+  function generateRoomCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     let code = ''
     for (let i = 0; i < 4; i++) {
@@ -38,14 +41,14 @@ export function useMultiplayerRoom() {
    * Genera el mazo aleatorio sincronizado para la sala.
    * Utilizado como fallback en entornos de desarrollo local.
    */
-  function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false) {
+  function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false): Card[] {
     const paresCount = Math.floor(cardCount / 2)
-    const base = []
+    const base: number[] = []
     for (let i = 1; i <= paresCount; i++) {
       base.push(i, i)
     }
 
-    const cards = base.map((valor, index) => ({
+    const cards: Card[] = base.map((valor, index) => ({
       id: index + 1,
       valor: cartasVisibles ? valor : null,
       revelada: cartasVisibles,
@@ -66,7 +69,7 @@ export function useMultiplayerRoom() {
     let uid = user.value?.uid
     if (!uid) {
       // Usar o crear ID local persistente para jugadores anónimos en multijugador
-      uid = localStorage.getItem('kehubo_anon_player_id')
+      uid = localStorage.getItem('kehubo_anon_player_id') || undefined
       if (!uid) {
         uid = 'anon_' + Math.random().toString(36).substring(2, 9)
         localStorage.setItem('kehubo_anon_player_id', uid)
@@ -81,7 +84,7 @@ export function useMultiplayerRoom() {
   }
 
   // Crear una nueva sala competitiva (usa Cloud Function para generar mazo seguro en servidor)
-  async function createRoom(config = {}) {
+  async function createRoom(config: Partial<RoomConfig> = {}) {
     loading.value = true
     error.value = null
 
@@ -92,7 +95,7 @@ export function useMultiplayerRoom() {
 
       // 1. Intentar crear la sala mediante Cloud Function (mazo protegido en secret/deck)
       try {
-        const createRoomFn = httpsCallable(functions, 'createMultiplayerRoom')
+        const createRoomFn = httpsCallable<{ config: { cardCount: number; cartasVisibles: boolean }; player: any }, { success: boolean; roomId: string; code: string; publicDeck: Card[] }>(functions, 'createMultiplayerRoom')
         const result = await createRoomFn({
           config: { cardCount, cartasVisibles },
           player
@@ -124,7 +127,7 @@ export function useMultiplayerRoom() {
       const roomRef = doc(collection(db, 'rooms'))
       const roomId = roomRef.id
 
-      const roomData = {
+      const roomData: Omit<Room, 'id'> = {
         code,
         hostId: player.uid,
         status: 'waiting',
@@ -154,9 +157,9 @@ export function useMultiplayerRoom() {
         joinedAt: serverTimestamp()
       })
 
-      currentRoom.value = { id: roomId, ...roomData }
+      currentRoom.value = { id: roomId, ...roomData } as Room
       return { success: true, roomId, code }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al crear sala multijugador:', err)
       error.value = 'No se pudo crear la sala. Inténtalo de nuevo.'
       return { success: false, error: error.value }
@@ -166,12 +169,12 @@ export function useMultiplayerRoom() {
   }
 
   // Revelar carta de forma segura solicitando el valor auténtico a la Cloud Function
-  async function flipCard(roomId, cardId) {
+  async function flipCard(roomId: string, cardId: number | string) {
     if (!roomId || !cardId) return null
     const player = getCurrentPlayerData()
 
     try {
-      const flipCardFn = httpsCallable(functions, 'flipCard')
+      const flipCardFn = httpsCallable<{ roomId: string; cardId: number | string; playerId: string }, { success: boolean; cardId: number; valor: number }>(functions, 'flipCard')
       const result = await flipCardFn({
         roomId,
         cardId,
@@ -181,9 +184,9 @@ export function useMultiplayerRoom() {
       if (result.data?.success) {
         return { cardId: result.data.cardId, valor: result.data.valor }
       }
-    } catch (err) {
+    } catch (err: any) {
       // Si la función no está activa en desarrollo local, buscar en el mazo público si tiene valor
-      console.warn('Consultando valor de carta con fallback local:', err.message)
+      console.warn('Consultando valor de carta con fallback local:', err?.message || err)
       const localCard = currentRoom.value?.config?.deck?.find(c => c.id === Number(cardId))
       if (localCard && localCard.valor !== null && localCard.valor !== undefined) {
         return { cardId: localCard.id, valor: localCard.valor }
@@ -193,7 +196,7 @@ export function useMultiplayerRoom() {
   }
 
   // Unirse a una sala existente (por código o ID directo)
-  async function joinRoom(codeOrId) {
+  async function joinRoom(codeOrId: string) {
     loading.value = true
     error.value = null
 
@@ -207,7 +210,7 @@ export function useMultiplayerRoom() {
     const upperInput = rawInput.toUpperCase()
 
     try {
-      let roomDoc = null
+      let roomDoc: DocumentSnapshot | null = null
       let roomId = rawInput
 
       // 1. Intentar buscar por ID de documento exacto (case-sensitive)
@@ -247,7 +250,7 @@ export function useMultiplayerRoom() {
         return { success: false, error: error.value }
       }
 
-      const roomData = { id: roomId, ...roomDoc.data() }
+      const roomData = { id: roomId, ...roomDoc.data() } as Room
 
       // Comprobar si la sala ya empezó (permitir reconexión si ya era jugador)
       const player = getCurrentPlayerData()
@@ -283,9 +286,9 @@ export function useMultiplayerRoom() {
 
       currentRoom.value = roomData
       return { success: true, roomId, code: roomData.code, roomData }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al unirse a la sala:', err)
-      error.value = 'Error al conectarse a la sala: ' + (err.message || err)
+      error.value = 'Error al conectarse a la sala: ' + (err?.message || err)
       return { success: false, error: error.value }
     } finally {
       loading.value = false
@@ -293,13 +296,13 @@ export function useMultiplayerRoom() {
   }
 
   // Escuchar información de la sala en tiempo real
-  function listenToRoom(roomId, callback) {
+  function listenToRoom(roomId: string, callback?: (data: Room | null) => void): Unsubscribe | (() => void) {
     if (!roomId) return () => {}
     const roomRef = doc(db, 'rooms', roomId)
 
     return onSnapshot(roomRef, (snapshot) => {
       if (snapshot.exists()) {
-        const data = { id: snapshot.id, ...snapshot.data() }
+        const data = { id: snapshot.id, ...snapshot.data() } as Room
         currentRoom.value = data
         if (callback) callback(data)
       } else {
@@ -312,7 +315,7 @@ export function useMultiplayerRoom() {
   }
 
   // Escuchar lista de jugadores en tiempo real (ordenada dinámicamente)
-  function listenToRoomPlayers(roomId, callback) {
+  function listenToRoomPlayers(roomId: string, callback?: (players: RoomPlayer[]) => void): Unsubscribe | (() => void) {
     if (!roomId) return () => {}
     const playersRef = collection(db, 'rooms', roomId, 'players')
 
@@ -320,7 +323,7 @@ export function useMultiplayerRoom() {
       const list = snapshot.docs.map(docSnap => ({
         id: docSnap.id,
         ...docSnap.data()
-      }))
+      })) as RoomPlayer[]
 
       // Ordenar dinámicamente de mayor a menor puntuación
       list.sort((a, b) => {
@@ -350,7 +353,7 @@ export function useMultiplayerRoom() {
 
   // Actualizar el progreso del jugador actual en la sala
   // 🛡️ Integridad: validación de límites matemáticos antes de enviar a Firestore
-  async function updatePlayerProgress(roomId, { score, pairsFound, isFinished, finishTime, finishSeconds }) {
+  async function updatePlayerProgress(roomId: string, data: { score?: number; pairsFound?: number; isFinished?: boolean; finishTime?: string; finishSeconds?: number }) {
     if (!roomId) return
     const player = getCurrentPlayerData()
 
@@ -359,17 +362,17 @@ export function useMultiplayerRoom() {
       const maxPossiblePairs = Math.floor(maxCardCount / 2)
 
       const playerRef = doc(db, 'rooms', roomId, 'players', player.uid)
-      const updates = {}
-      if (score !== undefined) {
-        updates.score = Math.max(0, Math.floor(Number(score) || 0))
+      const updates: Record<string, any> = {}
+      if (data.score !== undefined) {
+        updates.score = Math.max(0, Math.floor(Number(data.score) || 0))
       }
-      if (pairsFound !== undefined) {
-        updates.pairsFound = Math.min(maxPossiblePairs, Math.max(0, Math.floor(Number(pairsFound) || 0)))
+      if (data.pairsFound !== undefined) {
+        updates.pairsFound = Math.min(maxPossiblePairs, Math.max(0, Math.floor(Number(data.pairsFound) || 0)))
       }
-      if (isFinished) {
+      if (data.isFinished) {
         updates.status = 'finished'
-        updates.finishTime = finishTime || '--:--'
-        updates.finishSeconds = Math.max(0, Number(finishSeconds) || 0)
+        updates.finishTime = data.finishTime || '--:--'
+        updates.finishSeconds = Math.max(0, Number(data.finishSeconds) || 0)
       }
 
       await updateDoc(playerRef, updates)
@@ -379,15 +382,15 @@ export function useMultiplayerRoom() {
   }
 
   // Actualizar configuración de la sala por el moderador
-  async function updateRoomConfig(roomId, { cardCount, cartasVisibles }) {
+  async function updateRoomConfig(roomId: string, config: { cardCount: number; cartasVisibles: boolean }) {
     if (!roomId) return
     try {
-      const deck = generateSynchronizedDeck(cardCount, cartasVisibles)
+      const deck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles)
       const roomRef = doc(db, 'rooms', roomId)
       await updateDoc(roomRef, {
         config: {
-          cardCount,
-          cartasVisibles,
+          cardCount: config.cardCount,
+          cartasVisibles: config.cartasVisibles,
           deck
         }
       })
@@ -397,7 +400,7 @@ export function useMultiplayerRoom() {
   }
 
   // Iniciar la partida en la sala (solo moderador)
-  async function startRoomGame(roomId) {
+  async function startRoomGame(roomId: string) {
     if (!roomId) return
     try {
       const roomRef = doc(db, 'rooms', roomId)
@@ -419,7 +422,7 @@ export function useMultiplayerRoom() {
   }
 
   // Abandonar o cerrar sala
-  async function leaveRoom(roomId) {
+  async function leaveRoom(roomId: string) {
     if (!roomId) return
     const player = getCurrentPlayerData()
 
