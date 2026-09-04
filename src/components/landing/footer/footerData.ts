@@ -11,6 +11,14 @@ export interface FooterContactLink {
   isExternal: boolean
 }
 
+export type LegalDocType = 'privacy' | 'terms' | 'presskit' | 'imprint'
+
+export interface FooterLegalLink {
+  id: LegalDocType
+  label: string
+  icon: string
+}
+
 export const FOOTER_NAV_LINKS: FooterNavLink[] = [
   { name: 'Inicio', to: { name: 'home' }, icon: 'bi-house-door-fill' },
   { name: 'Salas Competitivas', to: { name: 'multiplayer-lobby' }, icon: 'bi-people-fill' },
@@ -25,4 +33,11 @@ export const FOOTER_CONTACT_LINKS: FooterContactLink[] = [
   { label: 'Portafolio Web', href: 'https://dacazo15.netlify.app/', icon: 'bi-globe2', isExternal: true },
   { label: 'GitHub', href: 'https://github.com/DaCazo15', icon: 'bi-github', isExternal: true },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/danielcp5150190/', icon: 'bi-linkedin', isExternal: true }
+]
+
+export const FOOTER_LEGAL_LINKS: FooterLegalLink[] = [
+  { id: 'privacy', label: 'Políticas de Privacidad', icon: 'bi-shield-check' },
+  { id: 'terms', label: 'Términos y Condiciones', icon: 'bi-file-earmark-text' },
+  { id: 'presskit', label: 'Press Kit', icon: 'bi-megaphone-fill' },
+  { id: 'imprint', label: 'Imprint', icon: 'bi-journal-bookmark-fill' }
 ]

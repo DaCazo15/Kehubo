@@ -2,6 +2,7 @@
 import { onMounted, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Navbar from './components/landing/Navbar.vue'
+import FooterSection from './components/landing/FooterSection.vue'
 import AuthModal from './components/auth/AuthModal.vue'
 import NotificationToast from './components/notifications/NotificationToast.vue'
 import { useAuth } from './composables/useAuth'
@@ -33,7 +34,8 @@ const isGameView = computed(() => {
 <template>
   <div class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] selection:bg-pink-500 selection:text-white">
     <Navbar v-if="!isGameView" />
-    <RouterView />
+    <RouterView class="flex-1" />
+    <FooterSection v-if="!isGameView" />
     <AuthModal />
     <NotificationToast />
   </div>
