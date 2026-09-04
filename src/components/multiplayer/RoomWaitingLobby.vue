@@ -58,7 +58,7 @@ function copyLink() {
           <div class="flex gap-2">
             <BaseButton
               variant="gold"
-              size="sm"
+              size="xs"
               rounded="xl"
               @click="copyCode"
             >
@@ -70,7 +70,7 @@ function copyLink() {
 
             <BaseButton
               variant="pink"
-              size="sm"
+              size="xs"
               rounded="xl"
               @click="copyLink"
             >
