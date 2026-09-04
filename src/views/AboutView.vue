@@ -82,13 +82,16 @@ import { RouterLink } from 'vue-router'
 
       <!-- CTA Inferior -->
       <div class="text-center pt-4">
-        <RouterLink 
+        <BaseButton 
           :to="{ name: 'game-rapido' }" 
-          class="inline-flex game-btn-pink py-3.5 px-8 rounded-xl text-white font-black text-sm uppercase tracking-wider items-center gap-2"
+          variant="pink"
+          size="lg"
         >
           <span>Comenzar a Jugar Ahora</span>
-          <span>→</span>
-        </RouterLink>
+          <template #icon-right>
+            <span>→</span>
+          </template>
+        </BaseButton>
       </div>
 
     </div>

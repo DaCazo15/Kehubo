@@ -28,6 +28,8 @@ export interface Room {
   startedAt?: any
 }
 
+export type MultiplayerRoom = Room
+
 export interface RoomPlayer {
   id?: string
   uid: string
@@ -111,6 +113,7 @@ export interface NotificationItem {
   senderAvatar?: string
   senderCountry?: string
   type?: NotificationType
+  title?: string
   message?: string
   score?: number
   time?: string
@@ -119,6 +122,7 @@ export interface NotificationItem {
   read: boolean
   status?: 'pending' | 'accepted' | 'rejected' | string
   createdAt?: any
+  timestamp?: any
   metadata?: Record<string, any>
 }
 

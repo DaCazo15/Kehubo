@@ -2,14 +2,13 @@
 import { onMounted, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Navbar from './components/landing/Navbar.vue'
-import ProfileNavbar from './components/profile/ProfileNavbar.vue'
 import AuthModal from './components/auth/AuthModal.vue'
 import NotificationToast from './components/notifications/NotificationToast.vue'
 import { useAuth } from './composables/useAuth'
 import { useNotifications } from './composables/useNotifications'
 
 const route = useRoute()
-const { user, initAuthListener, isAuthenticated } = useAuth()
+const { user, initAuthListener } = useAuth()
 const { initNotificationsListener, stopListener } = useNotifications()
 
 onMounted(() => {
@@ -29,25 +28,11 @@ const isGameView = computed(() => {
   const name = String(route.name || '')
   return ['game', 'game-rapido', 'multiplayer-room'].includes(name)
 })
-
-// Si el usuario está en el perfil o en ranking estando autenticado, o navegando autenticado en vistas no-landing,
-// mantenemos el ProfileNavbar activo para que nunca pierda el botón de su perfil.
-const showProfileNavbar = computed(() => {
-  if (isGameView.value) return false
-  const name = String(route.name || '')
-  return name === 'perfil' || (name === 'ranking' && isAuthenticated.value) || (isAuthenticated.value && name !== 'home')
-})
-
-const showLandingNavbar = computed(() => {
-  if (isGameView.value) return false
-  return !showProfileNavbar.value
-})
 </script>
 
 <template>
   <div class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] selection:bg-pink-500 selection:text-white">
-    <ProfileNavbar v-if="showProfileNavbar" />
-    <Navbar v-else-if="showLandingNavbar" />
+    <Navbar v-if="!isGameView" />
     <RouterView />
     <AuthModal />
     <NotificationToast />

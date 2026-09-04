@@ -29,30 +29,41 @@ const { isAuthenticated, openAuthModal } = useAuth()
           </p>
 
           <div class="pt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
-            <RouterLink 
+            <BaseButton 
               :to="{ name: 'game-rapido' }"
-              class="w-full sm:w-auto game-btn-pink py-4 px-10 rounded-2xl text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-xl hover:scale-105 transition-transform"
+              variant="pink"
+              size="lg"
+              rounded="2xl"
+              class="w-full sm:w-auto hover:scale-105"
             >
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
+              <template #icon-left>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </template>
               <span>Entrar al Juego</span>
-            </RouterLink>
+            </BaseButton>
 
-            <button
+            <BaseButton
               v-if="!isAuthenticated"
               @click="openAuthModal('register')"
-              class="w-full sm:w-auto game-btn-gold py-4 px-8 rounded-2xl text-slate-950 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2.5"
+              variant="gold"
+              size="lg"
+              rounded="2xl"
+              class="w-full sm:w-auto"
             >
               <span>Registrarse Gratis</span>
-            </button>
-            <RouterLink
+            </BaseButton>
+            <BaseButton
               v-else
               to="/ranking"
-              class="w-full sm:w-auto game-btn-gold py-4 px-8 rounded-2xl text-slate-950 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2.5"
+              variant="gold"
+              size="lg"
+              rounded="2xl"
+              class="w-full sm:w-auto"
             >
               <span>Explorar Ranking</span>
-            </RouterLink>
+            </BaseButton>
           </div>
         </div>
 

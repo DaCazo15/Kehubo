@@ -15,12 +15,13 @@ import { RouterLink } from 'vue-router'
         El perfil que buscas no existe o te has perdido en el vacío. Vuelve a la base.
       </p>
       <div class="pt-4">
-        <RouterLink 
+        <BaseButton 
           to="/" 
-          class="game-btn-pink py-3 px-8 rounded-xl text-white font-black text-sm uppercase tracking-wider inline-block"
+          variant="pink"
+          size="md"
         >
           Volver al Inicio
-        </RouterLink>
+        </BaseButton>
       </div>
     </div>
   </div>

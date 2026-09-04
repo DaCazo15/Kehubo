@@ -157,14 +157,19 @@ function handleStart() {
 
       <!-- Botón de Inicio -->
       <div class="pt-2">
-        <button
-          type="button"
+        <BaseButton
           @click="handleStart"
-          class="w-full game-btn-gold py-3.5 px-8 rounded-2xl text-slate-950 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-[0.99] transition"
+          variant="gold"
+          size="lg"
+          rounded="2xl"
+          block
+          class="hover:scale-[1.02]"
         >
-          <i class="bi bi-play-fill text-xl"></i>
+          <template #icon-left>
+            <i class="bi bi-play-fill text-xl"></i>
+          </template>
           <span>¡Iniciar Batalla!</span>
-        </button>
+        </BaseButton>
       </div>
 
     </div>

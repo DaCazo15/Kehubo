@@ -34,16 +34,18 @@ defineProps<{
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button
+        <BaseButton
           @click="resetGame"
-          class="bg-pink-500 hover:bg-pink-600 active:bg-pink-700
-                 text-white font-bold text-xs sm:text-sm
-                 py-1.5 px-3 sm:py-2 sm:px-5 rounded-xl shadow-md shadow-pink-900/40
-                 transition-all duration-300 ease-in-out transform hover:scale-105 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+          variant="pink"
+          size="sm"
+          rounded="xl"
+          class="sm:py-2 sm:px-5 shadow-md shadow-pink-900/40 hover:scale-105"
         >
-          <i class="bi bi-arrow-repeat text-sm"></i>
+          <template #icon-left>
+            <i class="bi bi-arrow-repeat text-sm"></i>
+          </template>
           <span>Reiniciar</span>
-        </button>
+        </BaseButton>
       </div>
     </div>
   </header>

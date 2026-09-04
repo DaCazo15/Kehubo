@@ -130,22 +130,32 @@ const podiumStyles = [
 
       <!-- Botones de Acción -->
       <div class="flex flex-col sm:flex-row gap-3 pt-2">
-        <button
+        <BaseButton
           v-if="isHost"
           @click="emit('play-again')"
-          class="flex-1 game-btn-gold py-3 px-6 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+          variant="gold"
+          size="md"
+          rounded="xl"
+          class="flex-1"
         >
-          <i class="bi bi-arrow-repeat text-base"></i>
+          <template #icon-left>
+            <i class="bi bi-arrow-repeat text-base"></i>
+          </template>
           <span>Jugar Otra Ronda</span>
-        </button>
+        </BaseButton>
 
-        <button
+        <BaseButton
           @click="emit('leave')"
-          class="flex-1 py-3 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-700 transition cursor-pointer"
+          variant="slate"
+          size="md"
+          rounded="xl"
+          class="flex-1"
         >
-          <i class="bi bi-box-arrow-left text-base"></i>
+          <template #icon-left>
+            <i class="bi bi-box-arrow-left text-base"></i>
+          </template>
           <span>Salir al Menú</span>
-        </button>
+        </BaseButton>
       </div>
 
     </div>

@@ -125,13 +125,17 @@ async function handleRemoveFriend(friendId: string) {
         </p>
       </div>
       <div class="pt-2" v-if="isOwnProfile">
-        <RouterLink
+        <BaseButton
           :to="{ name: 'ranking' }"
-          class="game-btn-gold inline-flex items-center gap-2 py-2 px-6 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider"
+          variant="gold"
+          size="sm"
+          rounded="xl"
         >
-          <i class="bi bi-trophy-fill"></i>
+          <template #icon-left>
+            <i class="bi bi-trophy-fill"></i>
+          </template>
           <span>Explorar Ranking</span>
-        </RouterLink>
+        </BaseButton>
       </div>
     </div>
 

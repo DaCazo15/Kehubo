@@ -79,31 +79,44 @@ const emit = defineEmits<{
 
       <!-- Botones de Acción -->
       <div class="space-y-3 pt-2">
-        <button
-          type="button"
+        <BaseButton
           @click="emit('playAgain')"
-          class="w-full game-btn-gold py-3 px-6 rounded-2xl text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] transition"
+          variant="gold"
+          size="md"
+          rounded="2xl"
+          block
+          class="hover:scale-[1.02]"
         >
-          <i class="bi bi-arrow-repeat text-lg"></i>
+          <template #icon-left>
+            <i class="bi bi-arrow-repeat text-lg"></i>
+          </template>
           <span>Jugar Otra Partida</span>
-        </button>
+        </BaseButton>
 
         <div class="grid grid-cols-2 gap-3">
-          <RouterLink
+          <BaseButton
             to="/ranking"
-            class="py-2.5 px-4 rounded-xl border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-300 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5"
+            variant="outline"
+            size="sm"
+            rounded="xl"
           >
-            <i class="bi bi-trophy-fill text-amber-400"></i>
+            <template #icon-left>
+              <i class="bi bi-trophy-fill text-amber-400"></i>
+            </template>
             <span>Ver Ranking</span>
-          </RouterLink>
+          </BaseButton>
 
-          <RouterLink
+          <BaseButton
             to="/"
-            class="py-2.5 px-4 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-slate-200 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-1.5"
+            variant="outline"
+            size="sm"
+            rounded="xl"
           >
-            <i class="bi bi-house-door-fill"></i>
+            <template #icon-left>
+              <i class="bi bi-house-door-fill"></i>
+            </template>
             <span>Inicio</span>
-          </RouterLink>
+          </BaseButton>
         </div>
       </div>
 
