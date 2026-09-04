@@ -28,6 +28,16 @@ const routes = [
     component: () => import('../views/RankingView.vue'),
   },
   {
+    path: '/competitivo',
+    name: 'multiplayer-lobby',
+    component: () => import('../views/MultiplayerLobbyView.vue'),
+  },
+  {
+    path: '/sala/:roomId',
+    name: 'multiplayer-room',
+    component: () => import('../views/MultiplayerRoomView.vue'),
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),

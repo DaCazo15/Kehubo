@@ -18,6 +18,10 @@ const props = defineProps({
   cartasVisibles: {
     type: Boolean,
     default: false
+  },
+  allowPause: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -28,11 +32,13 @@ const ringRef = ref(null)
 const isHovered = ref(false)
 
 function handleMouseEnter() {
+  if (!props.allowPause) return
   isHovered.value = true
   emit('pause')
 }
 
 function handleMouseLeave() {
+  if (!props.allowPause) return
   isHovered.value = false
   emit('resume')
 }
@@ -131,8 +137,13 @@ onMounted(() => {
         
         <!-- Indicador de Interacción Hover -->
         <p class="text-[11px] text-slate-400 pt-2 transition-colors group-hover:text-pink-300">
-          <span v-if="!isPaused">Pasa el ratón aquí para pausar el temporizador</span>
-          <span v-else class="text-pink-300 font-semibold">Aparta el ratón para reanudar la cuenta</span>
+          <template v-if="allowPause">
+            <span v-if="!isPaused">Pasa el ratón aquí para pausar el temporizador</span>
+            <span v-else class="text-pink-300 font-semibold">Aparta el ratón para reanudar la cuenta</span>
+          </template>
+          <template v-else>
+            <span class="text-amber-400/90 font-medium">⚡ Partida multijugador en vivo</span>
+          </template>
         </p>
       </div>
 

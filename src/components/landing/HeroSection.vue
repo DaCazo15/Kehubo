@@ -40,7 +40,7 @@ const { isAuthenticated, openAuthModal } = useAuth()
           </p>
 
           <!-- Grupo de Acciones (CTAs) -->
-          <div class="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+          <div class="pt-4 flex flex-col sm:flex-row flex-wrap items-center justify-center lg:justify-start gap-4">
             
             <!-- Botón Principal "Jugar Ahora" (Navega a juego rápido sin login) -->
             <RouterLink 
@@ -53,23 +53,22 @@ const { isAuthenticated, openAuthModal } = useAuth()
               <span>Jugar Rápido</span>
             </RouterLink>
 
-            <!-- Botón Secundario (Modal Login o Explorar Ranking) -->
-            <button
-              v-if="!isAuthenticated"
-              @click="openAuthModal('login')"
-              class="w-full sm:w-auto game-btn-gold py-4 px-8 rounded-2xl text-slate-950 font-black text-base uppercase tracking-wider flex items-center justify-center gap-2.5"
+            <!-- Botón Salas Competitivas Multijugador -->
+            <RouterLink 
+              :to="{ name: 'multiplayer-lobby' }" 
+              class="w-full sm:w-auto game-btn-gold py-4 px-8 rounded-2xl text-slate-950 font-black text-base uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-2xl hover:scale-105 transition-transform"
             >
-              <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-              </svg>
-              <span>Iniciar Sesión</span>
-            </button>
+              <i class="bi bi-people-fill text-lg"></i>
+              <span>Salas Multijugador</span>
+            </RouterLink>
+
+            <!-- Botón Ranking -->
             <RouterLink
-              v-else
               to="/ranking"
-              class="w-full sm:w-auto game-btn-gold py-4 px-8 rounded-2xl text-slate-950 font-black text-base uppercase tracking-wider flex items-center justify-center gap-2.5"
+              class="w-full sm:w-auto py-4 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-amber-300 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 border border-slate-800 transition"
             >
-              <span>Ver Tabla de Ranking</span>
+              <i class="bi bi-trophy-fill text-amber-400"></i>
+              <span>Ranking</span>
             </RouterLink>
           </div>
 

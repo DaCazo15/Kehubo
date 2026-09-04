@@ -95,6 +95,14 @@ onUnmounted(() => {
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
           </RouterLink>
           <RouterLink 
+            to="/competitivo" 
+            class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-1.5"
+            active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
+          >
+            <i class="bi bi-people-fill text-amber-400"></i>
+            <span>Salas</span>
+          </RouterLink>
+          <RouterLink 
             to="/about" 
             class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200"
             active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
@@ -256,6 +264,13 @@ onUnmounted(() => {
         class="block px-3 py-2 rounded-lg text-base font-bold uppercase text-slate-200 hover:text-amber-400 hover:bg-slate-900"
       >
         Ranking
+      </RouterLink>
+      <RouterLink 
+        to="/competitivo" 
+        @click="isMobileMenuOpen = false"
+        class="block px-3 py-2 rounded-lg text-base font-bold uppercase text-slate-200 hover:text-amber-400 hover:bg-slate-900"
+      >
+        Salas Competitivas
       </RouterLink>
       <RouterLink 
         to="/about" 

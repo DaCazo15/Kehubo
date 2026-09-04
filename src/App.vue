@@ -25,7 +25,7 @@ watch(user, (currentUser) => {
   }
 }, { immediate: true })
 
-const isGameView = computed(() => ['game', 'game-rapido'].includes(route.name))
+const isGameView = computed(() => ['game', 'game-rapido', 'multiplayer-room'].includes(route.name))
 
 // Si el usuario está en el perfil o en ranking estando autenticado, o navegando autenticado en vistas no-landing,
 // mantenemos el ProfileNavbar activo para que nunca pierda el botón de su perfil.

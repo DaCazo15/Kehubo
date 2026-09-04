@@ -94,12 +94,12 @@ function handleNotificationClick(notif) {
     <button
       type="button"
       @click.stop="toggleDropdown"
-      class="relative p-2 rounded-xl bg-slate-900/90 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-300 transition shadow-md group cursor-pointer"
+      class="relative py-2 px-3 rounded-xl bg-slate-900/90 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-300 transition shadow-md group cursor-pointer"
       :class="{ 'border-amber-400 text-amber-300 ring-2 ring-amber-400/30': isOpen }"
       title="Notificaciones"
       aria-label="Notificaciones"
     >
-      <i class="bi bi-bell-fill text-lg group-hover:scale-110 transition-transform inline-block"></i>
+      <i class="bi bi-bell-fill text-sm group-hover:scale-110 transition-transform inline-block"></i>
 
       <!-- Badge de no leídas -->
       <span

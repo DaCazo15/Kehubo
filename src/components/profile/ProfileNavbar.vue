@@ -70,11 +70,12 @@ async function handleLogout() {
             <span>Ranking</span>
           </RouterLink>
           <RouterLink 
-            :to="{ name: 'game' }" 
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-pink-400 hover:bg-slate-800/60 transition"
+            to="/competitivo" 
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition"
+            active-class="text-amber-300 bg-amber-500/20 border border-amber-500/50"
           >
-            <i class="bi bi-play-fill mr-1 text-pink-400"></i>
-            <span>Jugar</span>
+            <i class="bi bi-people-fill mr-1.5 text-amber-400"></i>
+            <span>Salas</span>
           </RouterLink>
         </nav>
 
@@ -184,6 +185,14 @@ async function handleLogout() {
       >
         <i class="bi bi-trophy-fill mr-2 text-amber-400"></i>
         <span>Ranking Global</span>
+      </RouterLink>
+      <RouterLink 
+        to="/competitivo" 
+        @click="isMobileMenuOpen = false"
+        class="block px-3 py-2 rounded-lg text-sm font-bold uppercase text-slate-300 hover:text-amber-400 hover:bg-slate-900"
+      >
+        <i class="bi bi-people-fill mr-2 text-amber-400"></i>
+        <span>Salas Competitivas</span>
       </RouterLink>
       
       <div v-if="isAuthenticated" class="pt-3 border-t border-slate-800">

@@ -39,6 +39,20 @@ service cloud.firestore {
       allow update, delete: if request.auth != null;
     }
 
+    // Reglas para salas competitivas multijugador (rooms)
+    match /rooms/{roomId} {
+      // Cualquier participante puede leer la sala
+      allow read: if true;
+      // Cualquier usuario puede crear, actualizar o cerrar una sala
+      allow create, update, delete: if true;
+
+      // Subcolección de jugadores en la sala
+      match /players/{playerId} {
+        allow read: if true;
+        allow create, update, delete: if true;
+      }
+    }
+
     // Regla por defecto para otras colecciones (si las hubiera)
     match /{document=**} {
       allow read, write: if request.auth != null;
