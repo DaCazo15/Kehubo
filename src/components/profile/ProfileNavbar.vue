@@ -19,6 +19,7 @@ const {
 const isMobileMenuOpen = ref<boolean>(false)
 const avatarError = ref<boolean>(false)
 
+const userInitial = computed(() => (userDisplayName.value || 'G').charAt(0).toUpperCase())
 const isProfileActive = computed(() => route.path.startsWith('/perfil'))
 const isRankingActive = computed(() => route.path === '/ranking')
 
@@ -90,7 +91,7 @@ async function handleLogout() {
             <RouterLink 
               :to="'/perfil/' + (user?.uid || '')" 
               title="Ir a Mi Perfil"
-              class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/80 transition group shadow-sm"
+              class="h-9.5 flex items-center gap-2 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/80 transition group shadow-sm box-border"
               :class="{ 'ring-1 ring-amber-400 border-amber-400': isProfileActive }"
             >
               <img 
@@ -99,13 +100,13 @@ async function handleLogout() {
                 alt="Avatar" 
                 referrerpolicy="no-referrer"
                 @error="avatarError = true"
-                class="w-7 h-7 rounded-full object-cover border border-amber-400/60 group-hover:scale-105 transition shrink-0"
+                class="w-6 h-6 rounded-full object-cover border border-amber-400/60 group-hover:scale-105 transition shrink-0"
               />
               <div 
                 v-else 
-                class="w-7 h-7 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0"
+                class="w-6 h-6 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0"
               >
-                {{ (userDisplayName || 'G').charAt(0).toUpperCase() }}
+                {{ userInitial }}
               </div>
               <span class="text-xs font-bold text-amber-200 group-hover:text-amber-100 max-w-24 truncate transition">
                 {{ userDisplayName }}
@@ -115,22 +116,25 @@ async function handleLogout() {
             <!-- Botón Cerrar Sesión -->
             <button
               @click="handleLogout"
-              class="py-3 px-3 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center transition shadow-sm cursor-pointer"
+              class="h-9.5 px-3 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center justify-center transition shadow-sm cursor-pointer box-border"
               title="Cerrar Sesión"
             >
               <i class="bi bi-box-arrow-right text-red-400"></i>
-              <!-- <span>Salir</span> -->
             </button>
           </template>
 
           <template v-else>
-            <button
+            <BaseButton
               @click="openAuthModal('login')"
-              class="game-btn-gold px-4 py-1.5 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+              variant="gold"
+              size="sm"
+              rounded="xl"
             >
-              <i class="bi bi-box-arrow-in-right"></i>
+              <template #icon-left>
+                <i class="bi bi-box-arrow-in-right"></i>
+              </template>
               <span>Iniciar Sesión</span>
-            </button>
+            </BaseButton>
           </template>
 
         </div>

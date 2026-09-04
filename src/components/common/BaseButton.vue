@@ -71,11 +71,11 @@ const variantClasses: Record<ButtonVariant, string> = {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  xs: 'py-1 px-2.5 text-xs',
-  sm: 'py-1.5 px-3.5 text-xs',
-  md: 'py-2.5 px-5 text-sm',
-  lg: 'py-3.5 px-8 text-sm sm:text-base',
-  xl: 'py-4 px-10 text-base sm:text-lg',
+  xs: 'h-8 px-3 text-xs leading-none',
+  sm: 'h-9.5 px-4 text-xs leading-none',
+  md: 'h-11 px-5 text-sm leading-none',
+  lg: 'h-13 px-6 sm:px-8 text-sm sm:text-base leading-none',
+  xl: 'h-15 px-8 sm:px-10 text-base sm:text-lg leading-none',
   none: ''
 }
 
@@ -91,7 +91,7 @@ const roundedClasses: Record<ButtonRounded, string> = {
 
 const buttonClasses = computed(() => {
   return [
-    'inline-flex items-center justify-center gap-2 font-black uppercase tracking-wider transition-all duration-300 select-none text-center',
+    'inline-flex items-center justify-center gap-2 font-black uppercase tracking-wider transition-all duration-300 select-none text-center box-border shrink-0',
     variantClasses[props.variant] || '',
     sizeClasses[props.size] || '',
     roundedClasses[props.rounded] || '',

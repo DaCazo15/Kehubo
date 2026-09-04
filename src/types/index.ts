@@ -24,6 +24,8 @@ export interface Room {
   status: RoomStatus
   maxPlayers: number
   config: RoomConfig
+  round?: number
+  restartTrigger?: number
   createdAt?: any
   startedAt?: any
 }

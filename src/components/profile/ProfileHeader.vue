@@ -136,7 +136,7 @@ const emit = defineEmits<{
 
           <div
             v-else-if="friendshipState === 'friends'"
-            class="py-2 px-4 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-black text-xs uppercase tracking-wider flex items-center gap-2"
+            class="h-9.5 px-4 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-black text-xs uppercase tracking-wider inline-flex items-center gap-2 box-border shrink-0"
           >
             <i class="bi bi-shield-check text-emerald-400 text-sm"></i>
             <span>Aliados</span>

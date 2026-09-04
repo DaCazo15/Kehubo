@@ -85,7 +85,7 @@ async function handleRegisterSubmit(data: {
         <button
           type="button"
           @click="authMode = 'login'"
-          class="flex-1 py-1.5 sm:py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider cursor-pointer"
+          class="flex-1 h-9 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider cursor-pointer flex items-center justify-center"
           :class="authMode === 'login' 
             ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm' 
             : 'text-slate-400 hover:text-slate-200'"
@@ -95,7 +95,7 @@ async function handleRegisterSubmit(data: {
         <button
           type="button"
           @click="authMode = 'register'"
-          class="flex-1 py-1.5 sm:py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider cursor-pointer"
+          class="flex-1 h-9 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider cursor-pointer flex items-center justify-center"
           :class="authMode === 'register' 
             ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-sm' 
             : 'text-slate-400 hover:text-slate-200'"

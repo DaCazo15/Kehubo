@@ -399,7 +399,7 @@ export function useMultiplayerRoom() {
     }
   }
 
-  // Iniciar la partida en la sala (solo moderador, mínimo 2 jugadores)
+  // Iniciar o reiniciar la partida en la sala (solo moderador, mínimo 2 jugadores)
   async function startRoomGame(roomId: string) {
     if (!roomId) return { success: false, error: 'ID de sala inválido' }
     try {
@@ -409,15 +409,31 @@ export function useMultiplayerRoom() {
         return { success: false, error: error.value }
       }
 
+      // Resetear progreso y puntuación de todos los jugadores en la sala para la nueva ronda
+      const resetPromises = playersSnap.docs.map(playerDoc => 
+        updateDoc(playerDoc.ref, {
+          score: 0,
+          pairsFound: 0,
+          status: 'ready',
+          finishTime: null,
+          finishSeconds: null
+        })
+      )
+      await Promise.all(resetPromises)
+
       const roomRef = doc(db, 'rooms', roomId)
-      // Regenerar un mazo fresco sincronizado antes de arrancar
+      // Regenerar un mazo fresco barajado sincronizado antes de arrancar
       const roomSnap = await getDoc(roomRef)
       if (roomSnap.exists()) {
-        const config = roomSnap.data().config || { cardCount: 24, cartasVisibles: false }
+        const roomData = roomSnap.data()
+        const config = roomData.config || { cardCount: 24, cartasVisibles: false }
         const freshDeck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles)
+        const nextRound = ((roomData.round as number) || 1) + 1
 
         await updateDoc(roomRef, {
           status: 'playing',
+          round: nextRound,
+          restartTrigger: Date.now(),
           'config.deck': freshDeck,
           startedAt: serverTimestamp()
         })

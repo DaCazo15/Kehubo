@@ -39,7 +39,7 @@ defineProps<{
           variant="pink"
           size="sm"
           rounded="xl"
-          class="sm:py-2 sm:px-5 shadow-md shadow-pink-900/40 hover:scale-105"
+          class="shadow-md shadow-pink-900/40 hover:scale-105"
         >
           <template #icon-left>
             <i class="bi bi-arrow-repeat text-sm"></i>

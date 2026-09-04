@@ -51,7 +51,7 @@ async function handleJoinRoom(code: string) {
           <button
             type="button"
             @click="activeTab = 'create'"
-            class="flex-1 py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2"
+            class="flex-1 h-10 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 box-border"
             :class="activeTab === 'create' ? 'bg-amber-400 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'"
           >
             <i class="bi bi-plus-circle-fill"></i>
@@ -61,7 +61,7 @@ async function handleJoinRoom(code: string) {
           <button
             type="button"
             @click="activeTab = 'join'"
-            class="flex-1 py-2.5 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2"
+            class="flex-1 h-10 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-2 box-border"
             :class="activeTab === 'join' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'"
           >
             <i class="bi bi-door-open-fill"></i>

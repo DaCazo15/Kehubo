@@ -95,6 +95,7 @@ function startMultiplayerMatch() {
   tableroBloqueado.value = true
   isPodiumOpen.value = false
   resetCronometro()
+  cancelCountdown()
 
   startCountdown(5, () => {
     if (cartasVisiblesAlInicio.value) {
@@ -240,21 +241,34 @@ onUnmounted(() => {
   detenerCronometro()
 })
 
-// Reaccionar a cambios de estado de la sala
-watch(() => currentRoom.value?.status, (newStatus, oldStatus) => {
-  if (newStatus === 'playing' && oldStatus !== 'playing') {
-    startMultiplayerMatch()
-  } else if (newStatus === 'finished') {
-    detenerCronometro()
-    tableroBloqueado.value = true
-    isPodiumOpen.value = true
-  } else if (newStatus === 'waiting') {
-    isPodiumOpen.value = false
-    detenerCronometro()
-    resetCronometro()
-    cancelCountdown()
+// Reaccionar a cambios de estado o reinicio de ronda en tiempo real
+watch(
+  [
+    () => currentRoom.value?.status,
+    () => currentRoom.value?.round,
+    () => currentRoom.value?.restartTrigger
+  ],
+  ([newStatus, newRound, newTrigger], [oldStatus, oldRound, oldTrigger]) => {
+    if (newStatus === 'playing') {
+      if (
+        oldStatus !== 'playing' ||
+        (newRound !== undefined && newRound !== oldRound) ||
+        (newTrigger !== undefined && newTrigger !== oldTrigger)
+      ) {
+        startMultiplayerMatch()
+      }
+    } else if (newStatus === 'finished') {
+      detenerCronometro()
+      tableroBloqueado.value = true
+      isPodiumOpen.value = true
+    } else if (newStatus === 'waiting') {
+      isPodiumOpen.value = false
+      detenerCronometro()
+      resetCronometro()
+      cancelCountdown()
+    }
   }
-})
+)
 </script>
 
 <template>
