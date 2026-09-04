@@ -57,4 +57,24 @@ const router = createRouter({
   },
 })
 
+// Recuperación automática de chunks obsoletos en despliegues (Vite/SPA cache busting)
+router.onError((error, to) => {
+  const isChunkError = 
+    error.message?.includes('Failed to fetch dynamically imported module') ||
+    error.message?.includes('Importing a module script failed') ||
+    error.message?.includes('Expected a JavaScript-or-Wasm module script')
+
+  if (isChunkError) {
+    const reloadKey = 'kehubo_chunk_reload_' + to.path
+    if (!sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, 'true')
+      window.location.assign(to.fullPath)
+    }
+  }
+})
+
+router.afterEach((to) => {
+  sessionStorage.removeItem('kehubo_chunk_reload_' + to.path)
+})
+
 export default router

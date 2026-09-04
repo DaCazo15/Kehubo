@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3001
 
 // 1. Seguridad de cabeceras HTTP con Helmet
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
 }))
 
 // 2. CORS con orígenes controlados y seguros
