@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/assets/logo/isologo.png" alt="Kehubo Logo" width="220px" />
+</p>
+
 # Kehubo — Plataforma de Juego de Memoria Táctica en Tiempo Real
 
 > Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables y compresión binaria de avatares.
