@@ -62,9 +62,6 @@ function copyLink() {
               rounded="xl"
               @click="copyCode"
             >
-              <template #icon-left>
-                <i :class="copiedCode ? 'bi bi-check-circle-fill text-emerald-800' : 'bi bi-copy'"></i>
-              </template>
               <span>{{ copiedCode ? '¡Copiado!' : 'Copiar Código' }}</span>
             </BaseButton>
 
@@ -74,9 +71,6 @@ function copyLink() {
               rounded="xl"
               @click="copyLink"
             >
-              <template #icon-left>
-                <i :class="copiedLink ? 'bi bi-check-circle-fill' : 'bi bi-link-45deg text-base'"></i>
-              </template>
               <span>{{ copiedLink ? '¡Enlace Copiado!' : 'Copiar Enlace' }}</span>
             </BaseButton>
           </div>
