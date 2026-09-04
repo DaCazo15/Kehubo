@@ -28,6 +28,7 @@ const {
   updateRoomConfig,
   startRoomGame,
   leaveRoom,
+  flipCard,
   getCurrentPlayerData
 } = useMultiplayerRoom()
 
@@ -131,9 +132,17 @@ function startMultiplayerMatch() {
   })
 }
 
-// Turno de selección y verificación de cartas
-function verificar(carta) {
+// Turno de selección y verificación de cartas (con resolución segura de mazo en servidor)
+async function verificar(carta) {
   if (tableroBloqueado.value || carta.revelada || carta.encontrada) return
+
+  // Si el valor no está presente localmente (mazo secreto en servidor), obtenerlo bajo demanda
+  if (carta.valor === null || carta.valor === undefined) {
+    const revealed = await flipCard(roomId.value, carta.id)
+    if (revealed && revealed.valor !== undefined) {
+      carta.valor = revealed.valor
+    }
+  }
 
   carta.revelada = true
   CartasSeleccionadas.value.push(carta)
@@ -141,6 +150,14 @@ function verificar(carta) {
   if (CartasSeleccionadas.value.length === 2) {
     tableroBloqueado.value = true
     const [c1, c2] = CartasSeleccionadas.value
+
+    // Asegurar que la segunda carta tenga su valor cargado
+    if (c2.valor === null || c2.valor === undefined) {
+      const revealed2 = await flipCard(roomId.value, c2.id)
+      if (revealed2 && revealed2.valor !== undefined) {
+        c2.valor = revealed2.valor
+      }
+    }
 
     if (c1.valor === c2.valor) {
       // Acierto

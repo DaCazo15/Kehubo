@@ -12,7 +12,8 @@ import {
   where,
   serverTimestamp
 } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from '../config/firebase'
 import { useAuth } from './useAuth'
 
 export function useMultiplayerRoom() {
@@ -35,12 +36,7 @@ export function useMultiplayerRoom() {
 
   /**
    * Genera el mazo aleatorio sincronizado para la sala.
-   * 
-   * 🛡️ NOTA DE ARQUITECTURA Y SEGURIDAD (Riesgo Residual Client-Side):
-   * Actualmente el mazo sincronizado se comparte en el documento de la sala para
-   * permitir partidas multijugador P2P/Serverless sin backend de Cloud Functions dedicado.
-   * En una arquitectura con backend server-side con Admin SDK, los valores ocultos
-   * deben mantenerse en servidor y revelarse individualmente por RPC al voltear.
+   * Utilizado como fallback en entornos de desarrollo local.
    */
   function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false) {
     const paresCount = Math.floor(cardCount / 2)
@@ -51,7 +47,7 @@ export function useMultiplayerRoom() {
 
     const cards = base.map((valor, index) => ({
       id: index + 1,
-      valor,
+      valor: cartasVisibles ? valor : null,
       revelada: cartasVisibles,
       encontrada: false
     }))
@@ -84,25 +80,54 @@ export function useMultiplayerRoom() {
     return { uid, displayName, photoURL, country }
   }
 
-  // Crear una nueva sala competitiva
+  // Crear una nueva sala competitiva (usa Cloud Function para generar mazo seguro en servidor)
   async function createRoom(config = {}) {
     loading.value = true
     error.value = null
 
     try {
+      const player = getCurrentPlayerData()
       const cardCount = config.cardCount || 24
       const cartasVisibles = config.cartasVisibles || false
+
+      // 1. Intentar crear la sala mediante Cloud Function (mazo protegido en secret/deck)
+      try {
+        const createRoomFn = httpsCallable(functions, 'createMultiplayerRoom')
+        const result = await createRoomFn({
+          config: { cardCount, cartasVisibles },
+          player
+        })
+
+        if (result.data?.success) {
+          const { roomId, code, publicDeck } = result.data
+          currentRoom.value = {
+            id: roomId,
+            code,
+            hostId: player.uid,
+            status: 'waiting',
+            maxPlayers: 4,
+            config: {
+              cardCount,
+              cartasVisibles,
+              deck: publicDeck
+            }
+          }
+          return { success: true, roomId, code }
+        }
+      } catch (fnErr) {
+        console.warn('Cloud Function no disponible o en entorno local, usando fallback seguro:', fnErr)
+      }
+
+      // 2. Fallback de cliente si la función no está desplegada en entorno local
       const deck = generateSynchronizedDeck(cardCount, cartasVisibles)
       const code = generateRoomCode()
-      const player = getCurrentPlayerData()
-
       const roomRef = doc(collection(db, 'rooms'))
       const roomId = roomRef.id
 
       const roomData = {
         code,
         hostId: player.uid,
-        status: 'waiting', // waiting | starting | playing | finished
+        status: 'waiting',
         maxPlayers: 4,
         config: {
           cardCount,
@@ -114,7 +139,6 @@ export function useMultiplayerRoom() {
 
       await setDoc(roomRef, roomData)
 
-      // Agregar al anfitrión a la subcolección de jugadores
       const playerRef = doc(db, 'rooms', roomId, 'players', player.uid)
       await setDoc(playerRef, {
         uid: player.uid,
@@ -139,6 +163,33 @@ export function useMultiplayerRoom() {
     } finally {
       loading.value = false
     }
+  }
+
+  // Revelar carta de forma segura solicitando el valor auténtico a la Cloud Function
+  async function flipCard(roomId, cardId) {
+    if (!roomId || !cardId) return null
+    const player = getCurrentPlayerData()
+
+    try {
+      const flipCardFn = httpsCallable(functions, 'flipCard')
+      const result = await flipCardFn({
+        roomId,
+        cardId,
+        playerId: player.uid
+      })
+
+      if (result.data?.success) {
+        return { cardId: result.data.cardId, valor: result.data.valor }
+      }
+    } catch (err) {
+      // Si la función no está activa en desarrollo local, buscar en el mazo público si tiene valor
+      console.warn('Consultando valor de carta con fallback local:', err.message)
+      const localCard = currentRoom.value?.config?.deck?.find(c => c.id === Number(cardId))
+      if (localCard && localCard.valor !== null && localCard.valor !== undefined) {
+        return { cardId: localCard.id, valor: localCard.valor }
+      }
+    }
+    return null
   }
 
   // Unirse a una sala existente (por código o ID directo)
@@ -412,6 +463,7 @@ export function useMultiplayerRoom() {
     updateRoomConfig,
     startRoomGame,
     leaveRoom,
+    flipCard,
     getCurrentPlayerData
   }
 }

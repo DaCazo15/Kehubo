@@ -55,6 +55,12 @@ service cloud.firestore {
                     || (request.resource.data.hostId == resource.data.hostId);
       allow delete: if request.auth != null && request.auth.uid == resource.data.hostId;
 
+      // 🛡️ SUBCOLECCIÓN SECRETA (Valores reales del mazo en servidor):
+      // Bloqueada para cualquier cliente directo. Solo accesible por Firebase Admin SDK en Cloud Functions.
+      match /secret/{secretDoc} {
+        allow read, write: if false;
+      }
+
       // Subcolección de jugadores en la sala
       match /players/{playerId} {
         allow read: if true;
