@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   const authMode = ref<'login' | 'register'>('login')
   const isInitialized = ref<boolean>(false)
 
-  const isAuthenticated = computed(() => !user.value)
+  const isAuthenticated = computed(() => !!user.value)
   
   const userDisplayName = computed(() => {
     if (userProfile.value?.displayName) return userProfile.value.displayName

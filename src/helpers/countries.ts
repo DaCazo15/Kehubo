@@ -214,9 +214,12 @@ export async function detectCountryFromIP(): Promise<string> {
     if (cached) return cached.toUpperCase()
   }
 
-  // 1. Intentar con country.is
+  // 1. Intentar con country.is (timeout 1.5s)
   try {
-    const res = await fetch('https://api.country.is/')
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 1500)
+    const res = await fetch('https://api.country.is/', { signal: controller.signal })
+    clearTimeout(timer)
     if (res.ok) {
       const data = await res.json()
       if (data.country) {
@@ -227,9 +230,12 @@ export async function detectCountryFromIP(): Promise<string> {
     }
   } catch (e) {}
 
-  // 2. Intentar con ipapi.co
+  // 2. Intentar con ipapi.co (timeout 1.5s)
   try {
-    const res = await fetch('https://ipapi.co/json/')
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 1500)
+    const res = await fetch('https://ipapi.co/json/', { signal: controller.signal })
+    clearTimeout(timer)
     if (res.ok) {
       const data = await res.json()
       if (data.country_code) {
