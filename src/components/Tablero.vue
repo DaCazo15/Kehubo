@@ -23,6 +23,14 @@ defineProps({
   tableroBloqueado: {
     type: Boolean,
     required: true
+  },
+  animatingScore: {
+    type: String,
+    default: ''
+  },
+  animatingTime: {
+    type: String,
+    default: ''
   }
 })
 </script>
@@ -36,8 +44,15 @@ defineProps({
         <!-- Puntos -->
         <div class="flex items-center gap-2">
           <span class="text-xs sm:text-sm font-bold uppercase text-slate-400">Puntos</span>
-          <div class="bg-amber-500/20 border border-amber-500/40 text-amber-300 font-black text-base sm:text-lg px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-            <i class="bi bi-star-fill text-amber-400 text-xs"></i>
+          <div 
+            class="font-black text-base sm:text-lg px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm transition-all duration-300"
+            :class="{
+              'bg-amber-500/20 border border-amber-500/40 text-amber-300': !animatingScore,
+              'bg-green-500/80 border border-green-400 text-green-100 scale-110 shadow-lg shadow-green-500/40': animatingScore === 'correct',
+              'bg-red-500/80 border border-red-400 text-red-100 scale-95 shadow-lg shadow-red-500/40': animatingScore === 'wrong'
+            }"
+          >
+            <i class="bi bi-star-fill text-xs" :class="animatingScore ? 'text-white' : 'text-amber-400'"></i>
             <span>{{ puntaje }}</span>
           </div>
         </div>
@@ -65,10 +80,13 @@ defineProps({
         <div class="flex items-center gap-2">
           <span class="text-xs sm:text-sm font-bold uppercase text-slate-400">Tiempo</span>
           <div 
-            class="font-mono font-black text-base sm:text-lg px-3.5 py-1 rounded-xl flex items-center gap-2 border transition-colors"
-            :class="tableroBloqueado 
-              ? 'bg-slate-950/80 border-slate-800 text-slate-500' 
-              : 'bg-pink-500/20 border-pink-500/40 text-pink-300 shadow-sm'"
+            class="font-mono font-black text-base sm:text-lg px-3.5 py-1 rounded-xl flex items-center gap-2 border transition-all duration-300"
+            :class="{
+              'bg-slate-950/80 border-slate-800 text-slate-500': tableroBloqueado && !animatingTime,
+              'bg-pink-500/20 border-pink-500/40 text-pink-300 shadow-sm': !tableroBloqueado && !animatingTime,
+              'bg-green-500/80 border-green-400 text-green-100 scale-110 shadow-lg shadow-green-500/40': animatingTime === 'correct',
+              'bg-red-500/80 border-red-400 text-red-100 scale-95 shadow-lg shadow-red-500/40': animatingTime === 'wrong'
+            }"
           >
             <i class="bi bi-stopwatch text-sm"></i>
             <span>{{ tiempo }}</span>

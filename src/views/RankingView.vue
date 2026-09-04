@@ -1,30 +1,65 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterLink } from 'vue-router'
-import { collection, onSnapshot, query, limit } from 'firebase/firestore'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { collection, onSnapshot, query, where, limit } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from '../composables/useAuth'
+import { getCountryName } from '../helpers/countries'
 
-const { isAuthenticated, openAuthModal } = useAuth()
+const { user, userCountry, isAuthenticated, openAuthModal, syncUserScoresInFirestore } = useAuth()
+const router = useRouter()
 
 const leaderboard = ref([])
 const loading = ref(true)
+const rankingType = ref('global') // 'global' | 'local'
+const locationError = ref('')
 let unsubscribe = null
 
+function getPlayerCountry(player) {
+  if (!player) return ''
+  if (player.country) return String(player.country).toUpperCase()
+  if (player.userId && player.userId === user.value?.uid && userCountry.value) {
+    return userCountry.value.toUpperCase()
+  }
+  return ''
+}
+
 function listenToLeaderboard() {
+  if (unsubscribe) unsubscribe()
   loading.value = true
   try {
+    // Si el usuario está autenticado y tiene país, aseguramos que sus partidas históricas tengan el país asignado
+    if (user.value?.uid && userCountry.value) {
+      syncUserScoresInFirestore(user.value.uid, { country: userCountry.value }).catch(() => {})
+    }
+
     const scoresRef = collection(db, 'scores')
-    const q = query(scoresRef, limit(50))
+    const q = query(scoresRef, limit(150))
     
     unsubscribe = onSnapshot(q, (snap) => {
-      const docs = snap.docs.map((doc) => ({
+      const rawDocs = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data()
       }))
 
+      // Mapear países conocidos de los usuarios en la consulta
+      const userCountryMap = new Map()
+      const currentUid = user.value?.uid
+      const currentCountry = userCountry.value ? userCountry.value.toUpperCase() : ''
+
+      if (currentUid && currentCountry) {
+        userCountryMap.set(currentUid, currentCountry)
+      }
+
+      for (const doc of rawDocs) {
+        const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
+        if (doc.country && !userCountryMap.has(identifier)) {
+          userCountryMap.set(identifier, String(doc.country).toUpperCase())
+        }
+      }
+
       // Ordenar: Mayor puntuación primero; a igual puntaje, menor tiempo (segundos)
-      docs.sort((a, b) => {
+      rawDocs.sort((a, b) => {
         const scoreA = Number(a.score) || 0
         const scoreB = Number(b.score) || 0
         if (scoreB !== scoreA) {
@@ -35,7 +70,34 @@ function listenToLeaderboard() {
         return secA - secB
       })
 
-      leaderboard.value = docs.slice(0, 20).map((item, idx) => ({
+      const uniqueDocs = []
+      const seenUsers = new Set()
+      const isLocal = rankingType.value === 'local'
+
+      for (const doc of rawDocs) {
+        const identifier = doc.userId !== 'anonimo' ? doc.userId : doc.displayName
+        if (!seenUsers.has(identifier)) {
+          let resolvedCountry = doc.country ? String(doc.country).toUpperCase() : (userCountryMap.get(identifier) || '')
+          if (!resolvedCountry && doc.userId === currentUid && currentCountry) {
+            resolvedCountry = currentCountry
+          }
+
+          // Si es ranking local, filtrar únicamente los que coincidan con el país seleccionado
+          if (isLocal && currentCountry) {
+            if (resolvedCountry !== currentCountry) {
+              continue
+            }
+          }
+
+          seenUsers.add(identifier)
+          uniqueDocs.push({
+            ...doc,
+            country: resolvedCountry
+          })
+        }
+      }
+
+      leaderboard.value = uniqueDocs.slice(0, 20).map((item, idx) => ({
         ...item,
         rank: idx + 1
       }))
@@ -52,9 +114,40 @@ function listenToLeaderboard() {
   }
 }
 
+watch(rankingType, () => {
+  listenToLeaderboard()
+})
+
+watch(userCountry, (newCountry) => {
+  if (rankingType.value === 'local') {
+    listenToLeaderboard()
+  }
+  if (user.value?.uid && newCountry) {
+    syncUserScoresInFirestore(user.value.uid, { country: newCountry }).catch(() => {})
+  }
+})
+
 onMounted(() => {
   listenToLeaderboard()
 })
+
+function goToProfile(userId) {
+  if (userId && userId !== 'anonimo') {
+    router.push({ name: 'perfil', params: { id: userId } })
+  }
+}
+
+function handleLocalClick() {
+  if (userCountry.value) {
+    rankingType.value = 'local'
+    locationError.value = ''
+  } else if (isAuthenticated.value) {
+    locationError.value = 'Debes definir tu ubicación en los ajustes de tu perfil para ver el ranking local.'
+    setTimeout(() => { locationError.value = '' }, 4000)
+  } else {
+    openAuthModal('login')
+  }
+}
 
 onUnmounted(() => {
   if (unsubscribe) unsubscribe()
@@ -72,11 +165,47 @@ onUnmounted(() => {
           <span class="text-xs font-black uppercase tracking-widest text-amber-300">Salón de la Fama</span>
         </div>
         <h1 class="text-3xl sm:text-5xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-linear-to-r from-amber-400 via-pink-400 to-amber-200">
-          RANKING GLOBAL DE GUERREROS
+          RANKING {{ rankingType === 'global' ? 'GLOBAL' : 'LOCAL' }} DE GUERREROS
         </h1>
         <p class="text-sm text-slate-400 max-w-xl mx-auto">
           Los mejores tiempos y puntajes registrados en Kehubo. ¿Tienes lo necesario para alcanzar el top 1?
         </p>
+
+        <!-- Toggle Global / Local -->
+        <div class="flex justify-center mt-6">
+          <div class="flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
+            <button
+              @click="rankingType = 'global'"
+              class="px-6 py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider flex items-center gap-2 cursor-pointer"
+              :class="rankingType === 'global' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+            >
+              <i class="bi bi-globe2"></i> Global
+            </button>
+            <button
+              v-if="userCountry"
+              @click="handleLocalClick"
+              class="px-6 py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider flex items-center gap-2 cursor-pointer"
+              :class="rankingType === 'local' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200'"
+            >
+              <span :class="'flag:' + userCountry.toUpperCase()" class="inline-block rounded-xs shadow-xs"></span>
+              Local
+            </button>
+            <button
+              v-else
+              @click="handleLocalClick"
+              class="px-6 py-2 text-xs font-bold rounded-lg duration-200 uppercase tracking-wider flex items-center gap-2 text-slate-500 hover:text-slate-400 transition cursor-pointer"
+              title="Configura tu país en tu perfil"
+            >
+              <i class="bi bi-geo-alt-fill"></i> Local (Sin País)
+            </button>
+          </div>
+        </div>
+
+        <!-- Alerta de Ubicación Faltante -->
+        <div v-if="locationError" class="max-w-md mx-auto mt-4 p-3 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs font-bold flex items-center justify-center gap-2 animate-fadeIn">
+          <i class="bi bi-exclamation-triangle-fill text-red-400 text-sm"></i>
+          <span>{{ locationError }}</span>
+        </div>
       </div>
 
       <!-- Estado: Cargando -->
@@ -93,11 +222,26 @@ onUnmounted(() => {
           <!-- 2do Lugar (Plata) -->
           <div v-if="leaderboard[1]" class="game-card-portal rounded-2xl p-6 text-center border-slate-400/30 flex flex-col justify-between order-2 md:order-1">
             <div>
-              <div class="w-16 h-16 rounded-full mx-auto mb-3 bg-slate-800 border-2 border-slate-300 flex items-center justify-center text-3xl shadow-lg">
-                <i class="bi bi-award-fill text-slate-300"></i>
+              <div class="w-16 h-16 rounded-full mx-auto mb-3 bg-slate-800 border-2 border-slate-300 flex items-center justify-center text-3xl shadow-lg relative">
+                <img 
+                  v-if="leaderboard[1].photoURL" 
+                  :src="leaderboard[1].photoURL" 
+                  class="w-full h-full rounded-full object-cover" 
+                  referrerpolicy="no-referrer"
+                />
+                <i v-else class="bi bi-person-fill text-slate-300"></i>
               </div>
               <span class="text-xs font-black uppercase text-slate-300 tracking-wider">2do Puesto</span>
-              <h3 class="text-lg font-black text-slate-100 mt-1 truncate">{{ leaderboard[1].displayName || leaderboard[1].name }}</h3>
+              <h3 
+                class="text-lg font-black text-slate-100 mt-1 truncate cursor-pointer hover:text-amber-300 transition-colors"
+                @click="goToProfile(leaderboard[1].userId)"
+              >
+                {{ leaderboard[1].displayName || leaderboard[1].name || 'Guerrero Anónimo' }}
+              </h3>
+              <div v-if="getPlayerCountry(leaderboard[1])" class="flex items-center justify-center gap-1.5 mt-1.5 text-xs text-slate-400 font-normal">
+                <span :class="'flag:' + getPlayerCountry(leaderboard[1])" class="inline-block rounded-xs shadow-xs shrink-0"></span>
+                <span>{{ getCountryName(getPlayerCountry(leaderboard[1])) }}</span>
+              </div>
             </div>
             <div class="mt-4 pt-4 border-t border-slate-800 flex justify-around text-xs">
               <div>
@@ -111,16 +255,37 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- 1er Lugar (Oro / Corona) -->
+          <!-- 1er Lugar (Oro / Corona con icono SVG) -->
           <div v-if="leaderboard[0]" class="game-card-portal rounded-2xl p-8 text-center border-amber-500/60 shadow-xl shadow-amber-500/20 flex flex-col justify-between order-1 md:order-2 md:-translate-y-4 bg-linear-to-b from-amber-950/40 via-slate-900 to-slate-950">
             <div>
-              <div class="w-20 h-20 rounded-full mx-auto mb-3 bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-xl shadow-amber-500/30 animate-pulse-glow text-amber-400">
-                <i class="bi bi-trophy-fill"></i>
+              <div class="w-20 h-20 rounded-full mx-auto mb-3 bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-xl shadow-amber-500/30 animate-pulse-glow text-amber-400 relative">
+                <img 
+                  v-if="leaderboard[0].photoURL" 
+                  :src="leaderboard[0].photoURL" 
+                  class="w-full h-full rounded-full object-cover" 
+                  referrerpolicy="no-referrer"
+                />
+                <i v-else class="bi bi-person-fill text-amber-400"></i>
+                <!-- Corona como icono SVG (sin emojis) -->
+                <div class="absolute -bottom-2 -right-2 bg-slate-900 rounded-full border border-amber-400 w-8 h-8 flex items-center justify-center shadow-lg">
+                  <svg class="w-4.5 h-4.5 text-amber-400 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" />
+                  </svg>
+                </div>
               </div>
               <span class="text-xs font-black uppercase text-amber-400 tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
                 Gran Campeón
               </span>
-              <h3 class="text-xl font-black text-amber-100 mt-2 truncate">{{ leaderboard[0].displayName || leaderboard[0].name }}</h3>
+              <h3 
+                class="text-xl font-black text-amber-100 mt-2 truncate cursor-pointer hover:text-amber-300 transition-colors"
+                @click="goToProfile(leaderboard[0].userId)"
+              >
+                {{ leaderboard[0].displayName || leaderboard[0].name || 'Guerrero Anónimo' }}
+              </h3>
+              <div v-if="getPlayerCountry(leaderboard[0])" class="flex items-center justify-center gap-1.5 mt-1.5 text-xs text-amber-200/80 font-normal">
+                <span :class="'flag:' + getPlayerCountry(leaderboard[0])" class="inline-block rounded-xs shadow-xs shrink-0"></span>
+                <span>{{ getCountryName(getPlayerCountry(leaderboard[0])) }}</span>
+              </div>
             </div>
             <div class="mt-6 pt-4 border-t border-amber-500/30 flex justify-around text-xs">
               <div>
@@ -137,11 +302,26 @@ onUnmounted(() => {
           <!-- 3er Lugar (Bronce) -->
           <div v-if="leaderboard[2]" class="game-card-portal rounded-2xl p-6 text-center border-amber-700/40 flex flex-col justify-between order-3">
             <div>
-              <div class="w-16 h-16 rounded-full mx-auto mb-3 bg-slate-800 border-2 border-amber-700 flex items-center justify-center text-3xl shadow-lg">
-                <i class="bi bi-award-fill text-amber-600"></i>
+              <div class="w-16 h-16 rounded-full mx-auto mb-3 bg-slate-800 border-2 border-amber-700 flex items-center justify-center text-3xl shadow-lg relative">
+                <img 
+                  v-if="leaderboard[2].photoURL" 
+                  :src="leaderboard[2].photoURL" 
+                  class="w-full h-full rounded-full object-cover" 
+                  referrerpolicy="no-referrer"
+                />
+                <i v-else class="bi bi-person-fill text-amber-600"></i>
               </div>
               <span class="text-xs font-black uppercase text-amber-600 tracking-wider">3er Puesto</span>
-              <h3 class="text-lg font-black text-slate-100 mt-1 truncate">{{ leaderboard[2].displayName || leaderboard[2].name }}</h3>
+              <h3 
+                class="text-lg font-black text-slate-100 mt-1 truncate cursor-pointer hover:text-amber-300 transition-colors"
+                @click="goToProfile(leaderboard[2].userId)"
+              >
+                {{ leaderboard[2].displayName || leaderboard[2].name || 'Guerrero Anónimo' }}
+              </h3>
+              <div v-if="getPlayerCountry(leaderboard[2])" class="flex items-center justify-center gap-1.5 mt-1.5 text-xs text-slate-400 font-normal">
+                <span :class="'flag:' + getPlayerCountry(leaderboard[2])" class="inline-block rounded-xs shadow-xs shrink-0"></span>
+                <span>{{ getCountryName(getPlayerCountry(leaderboard[2])) }}</span>
+              </div>
             </div>
             <div class="mt-4 pt-4 border-t border-slate-800 flex justify-around text-xs">
               <div>
@@ -160,8 +340,19 @@ onUnmounted(() => {
         <!-- Tabla Completa -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 class="text-sm font-black uppercase tracking-wider text-slate-200">Tabla de Clasificación</h2>
-            <span class="text-xs font-semibold text-slate-400">Actualizado en tiempo real</span>
+            <h2 class="text-sm font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span>Tabla de Clasificación</span>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300 font-bold flex items-center gap-1.5">
+                <template v-if="rankingType === 'global'">
+                  <i class="bi bi-globe2 text-[11px]"></i> Global
+                </template>
+                <template v-else>
+                  <span v-if="userCountry" :class="'flag:' + userCountry.toUpperCase()" class="inline-block rounded-xs shadow-xs"></span>
+                  <span>{{ getCountryName(userCountry) || 'Local' }}</span>
+                </template>
+              </span>
+            </h2>
+            <span class="text-xs font-semibold text-slate-400 hidden sm:inline">Actualizado en tiempo real</span>
           </div>
 
           <div class="overflow-x-auto">
@@ -178,7 +369,8 @@ onUnmounted(() => {
                 <tr 
                   v-for="player in leaderboard" 
                   :key="player.id"
-                  class="hover:bg-slate-800/40 transition-colors"
+                  class="hover:bg-slate-800/40 transition-colors cursor-pointer"
+                  @click="goToProfile(player.userId)"
                 >
                   <td class="py-4 px-6 font-black">
                     <span 
@@ -193,21 +385,34 @@ onUnmounted(() => {
                       #{{ player.rank }}
                     </span>
                   </td>
-                  <td class="py-4 px-6 font-bold text-slate-100 flex items-center gap-3">
-                    <img 
-                      v-if="player.photoURL" 
-                      :src="player.photoURL" 
-                      alt="Avatar" 
-                      referrerpolicy="no-referrer"
-                      class="w-7 h-7 rounded-full object-cover border border-amber-400/40 shrink-0"
-                    />
-                    <div 
-                      v-else 
-                      class="w-7 h-7 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0"
-                    >
-                      {{ (player.displayName || 'G').charAt(0).toUpperCase() }}
+                  <td class="py-4 px-6 font-bold text-slate-100">
+                    <div class="flex items-center gap-3">
+                      <img 
+                        v-if="player.photoURL" 
+                        :src="player.photoURL" 
+                        alt="Avatar" 
+                        referrerpolicy="no-referrer"
+                        class="w-9 h-9 rounded-full object-cover border border-amber-400/40 shrink-0"
+                      />
+                      <div 
+                        v-else 
+                        class="w-9 h-9 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black text-xs flex items-center justify-center shrink-0"
+                      >
+                        {{ (player.displayName || 'G').charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="truncate">{{ player.displayName || player.name || 'Guerrero Anónimo' }}</span>
+                        <!-- Bandera y nombre de país debajo del nombre del jugador -->
+                        <div v-if="getPlayerCountry(player)" class="flex items-center gap-1.5 text-xs text-slate-400 font-normal">
+                          <span :class="'flag:' + getPlayerCountry(player)" class="inline-block rounded-xs shadow-xs shrink-0"></span>
+                          <span class="truncate">{{ getCountryName(getPlayerCountry(player)) }}</span>
+                        </div>
+                        <div v-else class="flex items-center gap-1.5 text-xs text-slate-500 font-normal">
+                          <i class="bi bi-globe2 text-[10px]"></i>
+                          <span>Sin país</span>
+                        </div>
+                      </div>
                     </div>
-                    <span>{{ player.displayName || player.name || 'Guerrero Anónimo' }}</span>
                   </td>
                   <td class="py-4 px-6 text-center font-black text-pink-400">
                     {{ player.score }} pts
@@ -252,7 +457,7 @@ onUnmounted(() => {
           <button 
             v-if="!isAuthenticated"
             @click="openAuthModal('login')" 
-            class="game-btn-gold py-3 px-8 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider"
+            class="game-btn-gold py-3 px-8 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider cursor-pointer"
           >
             Iniciar Sesión
           </button>

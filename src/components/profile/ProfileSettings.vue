@@ -2,6 +2,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { maleAvatars, femaleAvatars } from '../../helpers/avatars'
+import { countries } from '../../helpers/countries'
 
 const emit = defineEmits(['close', 'saved'])
 
@@ -21,6 +22,7 @@ const {
 const editName = ref('')
 const selectedAvatar = ref('')
 const selectedGender = ref('hombre')
+const selectedCountry = ref('')
 const activeAvatarTab = ref('system') // 'google' | 'system' | 'upload'
 const selectedFile = ref(null)
 const customImagePreview = ref(null)
@@ -34,6 +36,7 @@ function syncFormData() {
     editName.value = userDisplayName.value || ''
     selectedAvatar.value = userAvatar.value || ''
     selectedGender.value = userGender.value || 'hombre'
+    selectedCountry.value = (userProfile.value?.country || '').toUpperCase()
     selectedFile.value = null
     customImagePreview.value = null
     errorMessage.value = ''
@@ -129,11 +132,73 @@ async function handleSave() {
       selectedFile.value = null
     }
 
+    // Si hay un país seleccionado, verificamos que coincida con el del dispositivo mediante GPS
+    if (selectedCountry.value && selectedCountry.value !== userProfile.value?.country) {
+      try {
+        const countryCode = await new Promise((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error('Navegador no soporta GPS'))
+            return
+          }
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              try {
+                const { latitude, longitude } = position.coords
+                const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`)
+                if (!res.ok) throw new Error('API fetch failed')
+                const data = await res.json()
+                resolve(data.countryCode) 
+              } catch (e) {
+                reject(new Error('Error de conexión a la API de GPS'))
+              }
+            },
+            (error) => {
+              console.warn('Error getCurrentPosition:', error.message)
+              reject(error)
+            },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+          )
+        })
+
+        if (countryCode && countryCode.toUpperCase() !== selectedCountry.value.toUpperCase()) {
+          if (import.meta.env.DEV) {
+            console.warn(`[DEV MODE] Ignorando discrepancia de GPS (${countryCode} vs ${selectedCountry.value})`)
+          } else {
+            errorMessage.value = `La ubicación seleccionada no coincide. Seleccionaste ${selectedCountry.value} pero tu GPS indica ${countryCode}.`
+            saving.value = false
+            return // Bloqueamos el guardado
+          }
+        }
+      } catch (e) {
+        const gpsReason = e.message || 'Desconocido'
+        console.warn('No se pudo verificar la ubicación por GPS, intentando por IP...', e)
+        // Fallback a IP si rechazan permisos o falla el GPS
+        try {
+          const res = await fetch('https://ipapi.co/json/')
+          if (res.ok) {
+            const geo = await res.json()
+            if (geo.country_code && geo.country_code.toUpperCase() !== selectedCountry.value.toUpperCase()) {
+              if (import.meta.env.DEV) {
+                console.warn(`[DEV MODE] Ignorando discrepancia de IP (${geo.country_code} vs ${selectedCountry.value})`)
+              } else {
+                errorMessage.value = `Seleccionaste ${selectedCountry.value}, pero el GPS falló (${gpsReason}) y tu IP indica ${geo.country_code}.`
+                saving.value = false
+                return // Bloqueamos el guardado
+              }
+            }
+          }
+        } catch (ipError) {
+          console.warn('No se pudo verificar por IP tampoco.', ipError)
+        }
+      }
+    }
+
     // Actualizar datos del perfil
     const res = await updateUserProfileData({
       displayName: editName.value.trim(),
       photoURL: selectedAvatar.value,
-      genero: selectedGender.value
+      genero: selectedGender.value,
+      country: selectedCountry.value ? selectedCountry.value.toUpperCase() : ''
     })
 
     if (res.success) {
@@ -197,6 +262,27 @@ async function handleSave() {
           placeholder="Tu nombre de leyenda"
           class="w-full bg-slate-950/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
         />
+      </div>
+    </div>
+
+    <!-- Sección 1.5: Modificar Nacionalidad -->
+    <div class="space-y-3 pt-2 border-t border-slate-800">
+      <label class="block text-xs font-black uppercase tracking-wider text-slate-300">
+        Nacionalidad
+      </label>
+      <div class="relative">
+        <select
+          v-model="selectedCountry"
+          class="w-full bg-slate-950/80 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none transition appearance-none"
+        >
+          <option value="" disabled selected>Selecciona tu país</option>
+          <option v-for="c in countries" :key="c.code" :value="c.code">
+            {{ c.name }}
+          </option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
       </div>
     </div>
 
@@ -278,7 +364,7 @@ async function handleSave() {
         <!-- Avatares Masculinos -->
         <div class="space-y-2">
           <p class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Avatares de Guerreros (Masculinos)</p>
-          <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          <div class="grid grid-cols-3 sm:grid-cols-5 gap-3">
             <button
               v-for="(avatarSrc, idx) in maleAvatars"
               :key="'male-' + idx"

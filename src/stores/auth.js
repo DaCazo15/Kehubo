@@ -8,7 +8,7 @@ import {
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { 
   ref as storageRef, 
   uploadBytes, 
@@ -18,6 +18,7 @@ import {
 import { auth, googleProvider, db, storage } from '../config/firebase'
 import { getDefaultAvatarByGender } from '../helpers/avatars'
 import { compressImageToAvif } from '../helpers/imageCompressor'
+import { countries, detectCountryFromIP } from '../helpers/countries'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -43,6 +44,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userGender = computed(() => {
     return userProfile.value?.genero || 'hombre'
+  })
+
+  const userCountry = computed(() => {
+    const fromProfile = userProfile.value?.country
+    if (fromProfile) return fromProfile.toUpperCase()
+    if (typeof window !== 'undefined') {
+      const fromCache = localStorage.getItem('kehubo_user_country')
+      if (fromCache) return fromCache.toUpperCase()
+    }
+    return ''
   })
 
   const isGoogleUser = computed(() => {
@@ -113,16 +124,34 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const userRef = doc(db, 'users', firebaseUser.uid)
-      const snap = await getDoc(userRef)
+      const userDocSnap = await getDoc(userRef)
+    
+      // Auto-detect country if not provided and not in db
+      let detectedCountry = extraData.country || ''
+      if (!detectedCountry) {
+        detectedCountry = await detectCountryFromIP()
+      }
 
-      if (snap.exists()) {
-        const data = snap.data()
+      if (userDocSnap.exists()) {
+        const data = userDocSnap.data()
+        const resolvedCountry = (data.country || detectedCountry || '').toUpperCase()
+
+        if (resolvedCountry && typeof window !== 'undefined') {
+          localStorage.setItem('kehubo_user_country', resolvedCountry)
+        }
+
+        // Si el usuario no tenía país en su documento de Firestore pero lo detectamos, guardarlo para persistencia
+        if (!data.country && resolvedCountry) {
+          updateDoc(userRef, { country: resolvedCountry }).catch(() => {})
+        }
+
         userProfile.value = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: data.displayName || firebaseUser.displayName,
           photoURL: data.photoURL || firebaseUser.photoURL,
           genero: data.genero || 'hombre',
+          country: resolvedCountry,
           googlePhotoURL: data.googlePhotoURL || (extraData.authProvider === 'google' ? firebaseUser.photoURL : null),
           authProvider: data.authProvider || (firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password'),
           createdAt: data.createdAt || new Date().toISOString(),
@@ -137,12 +166,18 @@ export const useAuthStore = defineStore('auth', () => {
           ? firebaseUser.photoURL 
           : (extraData.photoURL || getDefaultAvatarByGender(extraData.genero || 'hombre'))
 
+        const finalCountry = (detectedCountry || '').toUpperCase()
+        if (finalCountry && typeof window !== 'undefined') {
+          localStorage.setItem('kehubo_user_country', finalCountry)
+        }
+
         const newProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: extraData.displayName || firebaseUser.displayName || firebaseUser.email.split('@')[0],
           photoURL: initialAvatar,
           genero: extraData.genero || 'hombre',
+          country: finalCountry,
           googlePhotoURL: isGoogle ? firebaseUser.photoURL : null,
           authProvider: isGoogle ? 'google' : 'password',
           createdAt: new Date().toISOString(),
@@ -163,6 +198,15 @@ export const useAuthStore = defineStore('auth', () => {
           })
         }
       }
+      // Sincronizar partidas previas con el país/nombre/avatar actual
+      if (firebaseUser.uid && userProfile.value?.country) {
+        syncUserScoresInFirestore(firebaseUser.uid, {
+          country: userProfile.value.country,
+          displayName: userProfile.value.displayName,
+          photoURL: userProfile.value.photoURL
+        }).catch(() => {})
+      }
+
       return userProfile.value
     } catch (e) {
       console.warn('Firestore user profile sync error (falling back to Auth profile):', e)
@@ -172,6 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
         displayName: firebaseUser.displayName || extraData.displayName,
         photoURL: firebaseUser.photoURL || extraData.photoURL || getDefaultAvatarByGender(extraData.genero || 'hombre'),
         genero: extraData.genero || 'hombre',
+        country: (extraData.country || '').toUpperCase(),
         googlePhotoURL: firebaseUser.providerData?.find(p => p.providerId === 'google.com')?.photoURL || null,
         authProvider: firebaseUser.providerData?.some(p => p.providerId === 'google.com') ? 'google' : 'password',
         createdAt: new Date().toISOString(),
@@ -181,6 +226,35 @@ export const useAuthStore = defineStore('auth', () => {
         avatarStoragePath: null
       }
       return userProfile.value
+    }
+  }
+
+  // Sincroniza todas las partidas registradas por el usuario en 'scores'
+  async function syncUserScoresInFirestore(uid, { country, displayName, photoURL }) {
+    if (!uid || uid === 'anonimo') return
+    try {
+      const scoresRef = collection(db, 'scores')
+      const q = query(scoresRef, where('userId', '==', uid))
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        const batchPromises = snap.docs.map(docSnap => {
+          const data = docSnap.data()
+          const needsUpdate = (Boolean(country) && data.country !== country) ||
+                              (Boolean(displayName) && data.displayName !== displayName) ||
+                              (Boolean(photoURL) && data.photoURL !== photoURL)
+          if (needsUpdate) {
+            const updates = {}
+            if (country) updates.country = country
+            if (displayName) updates.displayName = displayName
+            if (photoURL) updates.photoURL = photoURL
+            return updateDoc(docSnap.ref, updates)
+          }
+          return Promise.resolve()
+        })
+        await Promise.all(batchPromises)
+      }
+    } catch (e) {
+      console.warn('Error sincronizando partidas en scores:', e)
     }
   }
 
@@ -250,7 +324,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function registerWithEmail(name, email, password, genero = 'hombre') {
+  async function registerWithEmail(name, email, password, genero = 'hombre', country = '') {
     if (checkBruteForceLockout()) {
       return { success: false, error: authError.value }
     }
@@ -276,6 +350,7 @@ export const useAuthStore = defineStore('auth', () => {
       await fetchOrCreateUserProfile(auth.currentUser, {
         displayName: sanitizedName,
         genero,
+        country,
         photoURL: assignedAvatar,
         authProvider: 'password'
       })
@@ -327,7 +402,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function updateUserProfileData({ displayName, photoURL, genero, avatarStoragePath }) {
+  async function updateUserProfileData({ displayName, photoURL, genero, country, avatarStoragePath }) {
     if (loading.value) return { success: false }
     loading.value = true
     authError.value = null
@@ -337,6 +412,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (sanitizedDisplayName !== undefined) updates.displayName = sanitizedDisplayName
       if (photoURL !== undefined) updates.photoURL = photoURL
       if (genero !== undefined) updates.genero = genero
+      if (country !== undefined) updates.country = country
       if (avatarStoragePath !== undefined) updates.avatarStoragePath = avatarStoragePath
 
       // 1. Actualizar Firebase Auth User
@@ -363,6 +439,19 @@ export const useAuthStore = defineStore('auth', () => {
           ...userProfile.value,
           ...updates
         }
+      }
+
+      if (updates.country && typeof window !== 'undefined') {
+        localStorage.setItem('kehubo_user_country', updates.country.toUpperCase())
+      }
+
+      // 4. Sincronizar partidas previas en la colección 'scores'
+      if (user.value?.uid) {
+        syncUserScoresInFirestore(user.value.uid, {
+          country: updates.country,
+          displayName: updates.displayName,
+          photoURL: updates.photoURL
+        }).catch(() => {})
       }
 
       return { success: true }
@@ -465,6 +554,7 @@ export const useAuthStore = defineStore('auth', () => {
     userDisplayName,
     userAvatar,
     userGender,
+    userCountry,
     isGoogleUser,
     googlePhotoURL,
     openAuthModal,
@@ -475,6 +565,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithGoogle,
     updateUserProfileData,
     uploadCustomAvatar,
+    syncUserScoresInFirestore,
     logout,
     initAuthListener,
   }

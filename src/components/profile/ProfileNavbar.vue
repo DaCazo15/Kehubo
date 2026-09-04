@@ -3,10 +3,12 @@ import { ref, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { img } from '../../helpers/imagenes'
 import { useAuth } from '../../composables/useAuth'
+import NotificationBell from '../notifications/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
 const { 
+  user,
   userDisplayName, 
   userAvatar, 
   isAuthenticated,
@@ -17,7 +19,7 @@ const {
 const isMobileMenuOpen = ref(false)
 const avatarError = ref(false)
 
-const isProfileActive = computed(() => route.path === '/perfil')
+const isProfileActive = computed(() => route.path.startsWith('/perfil'))
 const isRankingActive = computed(() => route.path === '/ranking')
 
 async function handleLogout() {
@@ -48,7 +50,7 @@ async function handleLogout() {
         <!-- Bloque Central: Navegación del Usuario -->
         <nav class="hidden md:flex items-center gap-2">
           <RouterLink 
-            to="/perfil" 
+            :to="'/perfil/' + (user?.uid || '')" 
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all"
             :class="isProfileActive 
               ? 'text-amber-300 bg-amber-500/20 border border-amber-500/50 shadow-sm shadow-amber-500/10' 
@@ -77,12 +79,15 @@ async function handleLogout() {
         </nav>
 
         <!-- Bloque Derecho: Info del Usuario y Cerrar Sesión / Login -->
-        <div class="hidden md:flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-3">
           
           <template v-if="isAuthenticated">
+            <!-- Campana de Notificaciones -->
+            <NotificationBell />
+
             <!-- Botón / Pill hacia Mi Perfil -->
             <RouterLink 
-              to="/perfil" 
+              :to="'/perfil/' + (user?.uid || '')" 
               title="Ir a Mi Perfil"
               class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/80 transition group shadow-sm"
               :class="{ 'ring-1 ring-amber-400 border-amber-400': isProfileActive }"
@@ -109,7 +114,7 @@ async function handleLogout() {
             <!-- Botón Cerrar Sesión -->
             <button
               @click="handleLogout"
-              class="py-2 px-3.5 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition shadow-sm"
+              class="py-3.5 px-3 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition shadow-sm cursor-pointer"
               title="Cerrar Sesión"
             >
               <i class="bi bi-box-arrow-right text-red-400"></i>
@@ -120,7 +125,7 @@ async function handleLogout() {
           <template v-else>
             <button
               @click="openAuthModal('login')"
-              class="game-btn-gold px-5 py-2 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5"
+              class="game-btn-gold px-5 py-2 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer"
             >
               <i class="bi bi-box-arrow-in-right"></i>
               <span>Iniciar Sesión</span>
@@ -131,6 +136,7 @@ async function handleLogout() {
 
         <!-- Botón Móvil -->
         <div class="md:hidden flex items-center gap-2">
+          <NotificationBell v-if="isAuthenticated" />
           <RouterLink 
             :to="{ name: 'game' }" 
             class="game-btn-pink px-3 py-1.5 rounded-lg text-white text-xs font-black"
@@ -139,7 +145,7 @@ async function handleLogout() {
           </RouterLink>
           <button
             @click="isMobileMenuOpen = !isMobileMenuOpen"
-            class="p-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/80 transition"
+            class="p-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/80 transition cursor-pointer"
           >
             <i v-if="!isMobileMenuOpen" class="bi bi-list text-2xl"></i>
             <i v-else class="bi bi-x-lg text-2xl"></i>
@@ -162,7 +168,7 @@ async function handleLogout() {
         ← Volver al Inicio
       </RouterLink>
       <RouterLink 
-        to="/perfil" 
+        :to="'/perfil/' + (user?.uid || '')" 
         @click="isMobileMenuOpen = false"
         class="block px-3 py-2 rounded-lg text-sm font-bold uppercase"
         :class="isProfileActive ? 'text-amber-300 bg-amber-500/15 border border-amber-500/30' : 'text-slate-300 hover:text-amber-400 hover:bg-slate-900'"

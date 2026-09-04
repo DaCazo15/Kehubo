@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Reglas para la colección de usuarios y sus subcolecciones
+    match /users/{userId} {
+      // Cualquier usuario puede leer perfiles públicos
+      allow read: if true;
+      // Sólo el usuario dueño puede modificar su propio perfil, o usuarios autenticados pueden actualizar contadores como friendsCount
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+
+      // Subcolección de amigos
+      match /friends/{friendId} {
+        // Cualquier usuario autenticado o visitante puede ver la lista de amigos
+        allow read: if true;
+        // Sólo usuarios autenticados pueden gestionar amistades
+        allow write: if request.auth != null;
+      }
+    }
+
+    // Reglas para la colección de puntuaciones (scores)
+    match /scores/{scoreId} {
+      // Todos pueden leer el ranking y puntuaciones
+      allow read: if true;
+      // Cualquier usuario autenticado o anónimo puede guardar partidas
+      allow create: if true;
+      // Sólo el autor puede modificar/eliminar su registro si aplica
+      allow update, delete: if request.auth != null;
+    }
+
+    // Reglas para la colección de notificaciones
+    match /notifications/{notificationId} {
+      // El usuario destinatario o remitente puede leer sus notificaciones
+      allow read: if request.auth != null;
+      // Cualquier usuario autenticado puede emitir notificaciones a otros
+      allow create: if request.auth != null;
+      // El destinatario o participantes pueden actualizar (marcar leída, aceptar/rechazar) o eliminar
+      allow update, delete: if request.auth != null;
+    }
+
+    // Regla por defecto para otras colecciones (si las hubiera)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

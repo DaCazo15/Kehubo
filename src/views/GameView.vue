@@ -19,6 +19,8 @@ const {
   numeros,
   tiempoFormateado,
   puntaje,
+  animatingScore,
+  animatingTime,
   totalPares,
   CartasPares,
   tableroBloqueado,
@@ -76,6 +78,8 @@ function onStartConfig(config) {
       :paresEncontrados="CartasPares.length"
       :cardCount="cardCount"
       :tableroBloqueado="tableroBloqueado"
+      :animatingScore="animatingScore"
+      :animatingTime="animatingTime"
     />
 
     <!-- Contenedor del Tablero de Cartas -->

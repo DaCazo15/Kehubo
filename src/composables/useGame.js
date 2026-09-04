@@ -1,11 +1,12 @@
 import { ref, computed, watch, onMounted } from 'vue'
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useCronometro } from './useCronometo.js'
 import { useCardDeck } from './useCardDeck'
 import { useGameTurn } from './useGameTurn'
 import { useCountdown } from './useCountdown'
 import { useAuth } from './useAuth'
+import { useNotificationStore } from '../stores/notifications'
 
 export function useGame(options = {}) {
   const {
@@ -25,8 +26,9 @@ export function useGame(options = {}) {
   const isSavingScore = ref(false)
   const scoreSaved = ref(false)
 
-  // Autenticación
-  const { user, userDisplayName, userAvatar, isAuthenticated } = useAuth()
+  // Autenticación & Notificaciones
+  const { user, userProfile, userDisplayName, userAvatar, userCountry, isAuthenticated } = useAuth()
+  const notificationStore = useNotificationStore()
 
   // Composables hijos
   const { 
@@ -44,12 +46,41 @@ export function useGame(options = {}) {
     detenerCronometro 
   } = useCronometro()
 
+  const puntajeBase = ref(0)
+  const animatingScore = ref('')
+  const animatingTime = ref('')
+
+  const triggerScoreAnimation = (type) => {
+    animatingScore.value = type
+    setTimeout(() => { animatingScore.value = '' }, 500)
+  }
+
+  const triggerTimeAnimation = (type) => {
+    animatingTime.value = type
+    setTimeout(() => { animatingTime.value = '' }, 500)
+  }
+
   const { 
     verificar, 
     resetTurno, 
     tableroBloqueado, 
     CartasPares 
-  } = useGameTurn(numeros)
+  } = useGameTurn(numeros, {
+    onMatch: (isCorrect) => {
+      if (isCorrect) {
+        puntajeBase.value += 10
+        triggerScoreAnimation('correct')
+        triggerTimeAnimation('correct')
+      } else {
+        if (cartasVisiblesAlInicio.value) {
+          puntajeBase.value -= 1
+          tiempo.value += 2
+          triggerScoreAnimation('wrong')
+          triggerTimeAnimation('wrong')
+        }
+      }
+    }
+  })
 
   const { 
     countdown, 
@@ -63,7 +94,7 @@ export function useGame(options = {}) {
 
   // Cálculos reactivos
   const totalPares = computed(() => Math.floor(cardCount.value / 2))
-  const puntaje = computed(() => CartasPares.value.length * 10)
+  const puntaje = computed(() => puntajeBase.value)
   const progresoPorcentaje = computed(() => {
     if (totalPares.value === 0) return 0
     return Math.round((CartasPares.value.length / totalPares.value) * 100)
@@ -84,6 +115,9 @@ export function useGame(options = {}) {
     // Detener y resetear estados anteriores
     resetCronometro()
     resetTurno()
+    puntajeBase.value = 0
+    animatingScore.value = ''
+    animatingTime.value = ''
     tableroBloqueado.value = true
 
     // Inicializar cartas según configuración elegida
@@ -146,6 +180,7 @@ export function useGame(options = {}) {
         userId: uid,
         displayName: name,
         photoURL: photo,
+        country: userCountry.value || userProfile.value?.country || '',
         score: matchScore,
         time: matchTime,
         seconds: matchSeconds,
@@ -173,6 +208,55 @@ export function useGame(options = {}) {
             bestSeconds: matchSeconds
           }).catch(() => {})
         }
+      }
+
+      // 3. Emitir notificaciones a los jugadores superados
+      try {
+        const scoresRef = collection(db, 'scores')
+        const q = query(
+          scoresRef,
+          where('difficulty', '==', cardCount.value),
+          limit(50)
+        )
+        const snap = await getDocs(q)
+        if (!snap.empty) {
+          const rivalScores = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(d => d.userId && d.userId !== 'anonimo' && d.userId !== uid)
+
+          const notifiedUserIds = new Set()
+          for (const rival of rivalScores) {
+            const rivalScore = Number(rival.score) || 0
+            const rivalSeconds = Number(rival.seconds) || 9999
+
+            // Si el jugador actual obtuvo mejor puntaje o a igual puntaje menor tiempo
+            const isBetterScore = matchScore > rivalScore
+            const isBetterTime = matchScore === rivalScore && matchSeconds < rivalSeconds
+
+            if ((isBetterScore || isBetterTime) && !notifiedUserIds.has(rival.userId)) {
+              notifiedUserIds.add(rival.userId)
+
+              // Limitar a máximo 3 rivales directos superados por partida
+              if (notifiedUserIds.size <= 3) {
+                notificationStore.emitNotification({
+                  targetUserId: rival.userId,
+                  senderUserId: uid,
+                  senderName: name,
+                  senderAvatar: photo,
+                  senderCountry: userCountry.value || userProfile.value?.country || '',
+                  type: 'record_beaten',
+                  message: `¡${name} ha superado tu récord de ${cardCount.value} cartas con un tiempo de ${matchTime} y ${matchScore} pts!`,
+                  score: matchScore,
+                  time: matchTime,
+                  seconds: matchSeconds,
+                  difficulty: cardCount.value
+                }).catch(() => {})
+              }
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.warn('Error verificando rivales superados para notificar:', notifErr)
       }
 
       scoreSaved.value = true
@@ -243,6 +327,8 @@ export function useGame(options = {}) {
     tiempo,
     tiempoFormateado,
     puntaje,
+    animatingScore,
+    animatingTime,
     totalPares,
     CartasPares,
     progresoPorcentaje,

@@ -14,6 +14,7 @@ export function useAuth() {
     userDisplayName,
     userAvatar,
     userGender,
+    userCountry,
     isGoogleUser,
     googlePhotoURL
   } = storeToRefs(authStore)
@@ -27,6 +28,7 @@ export function useAuth() {
     loginWithGoogle,
     updateUserProfileData,
     uploadCustomAvatar,
+    syncUserScoresInFirestore,
     logout,
     initAuthListener,
   } = authStore
@@ -42,6 +44,7 @@ export function useAuth() {
     userDisplayName,
     userAvatar,
     userGender,
+    userCountry,
     isGoogleUser,
     googlePhotoURL,
     openAuthModal,
@@ -52,6 +55,7 @@ export function useAuth() {
     loginWithGoogle,
     updateUserProfileData,
     uploadCustomAvatar,
+    syncUserScoresInFirestore,
     logout,
     initAuthListener,
   }

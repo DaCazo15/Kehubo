@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
-export function useGameTurn(numeros) {
+export function useGameTurn(numeros, options = {}) {
+  const { onMatch } = options
   const seleccionadas = ref([])
 
   const tableroBloqueado = ref(false)
@@ -31,9 +32,13 @@ export function useGameTurn(numeros) {
         c2.encontrada = true
         CartasPares.value.push(c1.valor)
         
+        if (onMatch) onMatch(true)
+
         seleccionadas.value = [] // Limpia las seleccionadas para el siguiente turno.
         tableroBloqueado.value = false // Desbloquea el tablero.
       } else {
+        if (onMatch) onMatch(false)
+        
         setTimeout(() => {
           c1.revelada = false
           c2.revelada = false

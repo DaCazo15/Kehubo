@@ -5,6 +5,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 import App from './App.vue'
 import router from './router'
 import { firebaseApp } from './config/firebase'
+import 'country-flag-icons/3x2/flags.css'
 import './style.css'
 
 const app = createApp(App)

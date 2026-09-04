@@ -4,7 +4,6 @@ export const maleAvatars = [
   new URL('../assets/perfil-user/male/3.png', import.meta.url).href,
   new URL('../assets/perfil-user/male/4.png', import.meta.url).href,
   new URL('../assets/perfil-user/male/5.png', import.meta.url).href,
-  new URL('../assets/perfil-user/male/6.png', import.meta.url).href,
 ]
 
 export const femaleAvatars = [

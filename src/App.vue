@@ -1,17 +1,29 @@
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import Navbar from './components/landing/Navbar.vue'
 import ProfileNavbar from './components/profile/ProfileNavbar.vue'
 import AuthModal from './components/auth/AuthModal.vue'
+import NotificationToast from './components/notifications/NotificationToast.vue'
 import { useAuth } from './composables/useAuth'
+import { useNotifications } from './composables/useNotifications'
 
 const route = useRoute()
-const { initAuthListener, isAuthenticated } = useAuth()
+const { user, initAuthListener, isAuthenticated } = useAuth()
+const { initNotificationsListener, stopListener } = useNotifications()
 
 onMounted(() => {
   initAuthListener()
 })
+
+// Escuchar cambios de autenticación para activar/desactivar notificaciones en tiempo real
+watch(user, (currentUser) => {
+  if (currentUser?.uid) {
+    initNotificationsListener(currentUser.uid)
+  } else {
+    stopListener()
+  }
+}, { immediate: true })
 
 const isGameView = computed(() => ['game', 'game-rapido'].includes(route.name))
 
@@ -34,5 +46,6 @@ const showLandingNavbar = computed(() => {
     <Navbar v-else-if="showLandingNavbar" />
     <RouterView />
     <AuthModal />
+    <NotificationToast />
   </div>
 </template>

@@ -18,7 +18,7 @@ const routes = [
     component: () => import('../views/GameView.vue'),
   },
   {
-    path: '/perfil',
+    path: '/perfil/:id?',
     name: 'perfil',
     component: () => import('../views/ProfileView.vue'),
   },
@@ -34,7 +34,8 @@ const routes = [
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/',
+    name: 'not-found',
+    component: () => import('../views/NotFoundView.vue'),
   },
 ]
 

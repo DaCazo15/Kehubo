@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { maleAvatars, femaleAvatars } from '../../helpers/avatars'
+import { countries } from '../../helpers/countries'
 
 const {
   isAuthModalOpen,
@@ -20,6 +21,7 @@ const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const genero = ref('hombre') // 'hombre' | 'mujer'
+const country = ref('') // código de país
 const localError = ref('')
 
 // Limpiar formulario cuando se abre o cambia de modo
@@ -29,6 +31,7 @@ watch([isAuthModalOpen, authMode], () => {
   password.value = ''
   confirmPassword.value = ''
   genero.value = 'hombre'
+  country.value = ''
   localError.value = ''
 })
 
@@ -63,7 +66,11 @@ async function handleSubmit() {
       localError.value = 'La contraseña debe tener al menos 6 caracteres.'
       return
     }
-    await registerWithEmail(name.value, email.value, password.value, genero.value)
+    if (!country.value) {
+      localError.value = 'Por favor selecciona tu nacionalidad.'
+      return
+    }
+    await registerWithEmail(name.value, email.value, password.value, genero.value, country.value)
   } else {
     await loginWithEmail(email.value, password.value)
   }
@@ -245,6 +252,28 @@ async function handleSubmit() {
                   <p class="text-[10px] text-slate-400">Avatar inicial</p>
                 </div>
               </button>
+            </div>
+          </div>
+
+          <!-- Selección de Nacionalidad (sólo en Registro) -->
+          <div v-if="authMode === 'register'">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+              Nacionalidad
+            </label>
+            <div class="relative">
+              <select
+                v-model="country"
+                required
+                class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition appearance-none"
+              >
+                <option value="" disabled selected>Selecciona tu país</option>
+                <option v-for="c in countries" :key="c.code" :value="c.code">
+                  {{ c.flag }} {{ c.name }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
 
