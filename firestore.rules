@@ -6,8 +6,9 @@ service cloud.firestore {
     match /users/{userId} {
       // Cualquier usuario puede leer perfiles públicos
       allow read: if true;
-      // Sólo el usuario dueño puede modificar su propio perfil, o usuarios autenticados pueden actualizar contadores como friendsCount
-      allow create, update: if request.auth != null;
+      // Sólo el usuario dueño puede crear o modificar su propio perfil
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
       allow delete: if request.auth != null && request.auth.uid == userId;
 
       // Subcolección de amigos
@@ -23,10 +24,10 @@ service cloud.firestore {
     match /scores/{scoreId} {
       // Todos pueden leer el ranking y puntuaciones
       allow read: if true;
-      // Cualquier usuario autenticado o anónimo puede guardar partidas
-      allow create: if true;
-      // Sólo el autor puede modificar/eliminar su registro si aplica
-      allow update, delete: if request.auth != null;
+      // Sólo usuarios autenticados pueden guardar sus propias partidas
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Sólo el autor puede modificar/eliminar su registro
+      allow update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
     // Reglas para la colección de notificaciones
@@ -43,13 +44,31 @@ service cloud.firestore {
     match /rooms/{roomId} {
       // Cualquier participante puede leer la sala
       allow read: if true;
-      // Cualquier usuario puede crear, actualizar o cerrar una sala
-      allow create, update, delete: if true;
+      // Crear sala con validación de estructura requerida
+      allow create: if request.resource.data.code is string
+                    && request.resource.data.hostId is string
+                    && request.resource.data.status == 'waiting'
+                    && request.resource.data.maxPlayers <= 4
+                    && request.resource.data.config != null;
+      // Solo el anfitrión o actualización legítima de estado
+      allow update: if (request.auth != null && request.auth.uid == resource.data.hostId)
+                    || (request.resource.data.hostId == resource.data.hostId);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.hostId;
 
       // Subcolección de jugadores en la sala
       match /players/{playerId} {
         allow read: if true;
-        allow create, update, delete: if true;
+        // Registro inicial del jugador con valores iniciales limpios
+        allow create: if request.resource.data.uid == playerId
+                      && request.resource.data.score == 0
+                      && request.resource.data.pairsFound == 0;
+        // Actualización de progreso: solo el propio jugador y acotado matemáticamente
+        allow update: if ((request.auth != null && request.auth.uid == playerId) || request.resource.data.uid == playerId)
+                      && request.resource.data.score >= resource.data.score
+                      && request.resource.data.pairsFound >= resource.data.pairsFound
+                      && request.resource.data.pairsFound <= get(/databases/$(database)/documents/rooms/$(roomId)).data.config.cardCount / 2;
+        allow delete: if (request.auth != null && request.auth.uid == playerId)
+                      || (request.auth != null && request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.hostId);
       }
     }
 
