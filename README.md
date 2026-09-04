@@ -4,7 +4,7 @@
 
 # Kehubo — Plataforma de Juego de Memoria Táctica en Tiempo Real
 
-> Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables y compresión binaria de avatares.
+> Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables, arquitectura modular y compresión binaria de avatares.
 
 **Demo en vivo:** [https://kehubo.vercel.app/](https://kehubo.vercel.app/)
 
@@ -23,10 +23,11 @@
 ### Frontend
 - **Vue 3** (Composition API, `<script setup>`, Reactividad Nativa)
 - **Vite** (Bundler y entorno de desarrollo de alto rendimiento)
+- **TypeScript** (Tipado estricto en tipos de dominio, componentes y composables)
 - **Pinia** (Gestión de estado global centralizado para autenticación y notificaciones)
-- **Vue Router** (Enrutamiento SPA con guardias de navegación)
-- **Tailwind CSS 4** (Diseño y animaciones fluidas)
-- **Anime.js & GSAP** (Animaciones tácticas de cartas, conteo regresivo y micro-interacciones)
+- **Vue Router** (Enrutamiento SPA con rutas dinámicas nombradas y guardias de navegación)
+- **Tailwind CSS 4** (Diseño moderno, dark mode, glassmorphism y micro-animaciones)
+- **Anime.js & GSAP** (Animaciones tácticas de cartas, conteo regresivo y efectos de portal)
 - **Bootstrap Icons** (Iconografía optimizada)
 
 ### Backend, Base de Datos y Servicios
@@ -42,11 +43,13 @@
 ### Testing & Calidad de Código
 - **Vitest** (Test runner de pruebas unitarias y de integración rápida)
 - **@vue/test-utils & JSDOM** (Pruebas de componentes y composables reactivos)
+- **Vue Component Modularizer Skill** (Arquitectura desacoplada basada en orquestadores y subcomponentes)
 
 ---
 
 ## Características Principales
 
+- **Arquitectura de Componentes Modular**: Estructura desacoplada con orquestadores limpios y subcomponentes atómicos (`navbar`, `hero`, `features`, `footer`, `profile`, `multiplayer`, `ranking`) respaldados por un Design System unificado (`BaseButton`, `BaseModal`).
 - **Autenticación y Perfiles**: Registro e inicio de sesión con validación en dos columnas, persistencia de sesión, selección de género y nacionalidad con banderas dinámicas.
 - **Optimización de Avatares a AVIF**: Procesamiento binario en servidor mediante Sharp, recortando y convirtiendo imágenes a formato AVIF con reducciones superiores al 80% en tamaño de carga.
 - **Modo Contrarreloj (Un Jugador)**: 4 dificultades tácticas (16, 24, 32 y 40 cartas), cálculo de puntuación dinámica, cartas viradas opcionales y control de temporizador.
@@ -67,6 +70,30 @@
   <img src="src/assets/screenshot/rank.png" alt="Tabla de Ranking Global" width="49%" style="border-radius: 8px;" />
   <img src="src/assets/screenshot/profile.png" alt="Perfil de Usuario" width="49%" style="border-radius: 8px;" />
 </p>
+
+---
+
+## Estructura de Componentes y Modularización
+
+El proyecto sigue una arquitectura desacoplada donde cada vista principal o sección compleja actúa como un **Orquestador**, delegando responsabilidades a subcomponentes especializados:
+
+```
+src/
+├── components/
+│   ├── common/             # Componentes base del Design System (BaseButton, BaseModal)
+│   ├── landing/            # Landing page modular
+│   │   ├── navbar/         # Logo, DesktopNav, UserActions, MobileToggle, MobileMenu, navData
+│   │   ├── hero/           # HeroContent, HeroStats, HeroCardPortal
+│   │   ├── features/       # FeatureCard, featuresData
+│   │   └── footer/         # FooterBrand, FooterNav, FooterContact, footerData
+│   ├── multiplayer/        # LiveLeaderboard, RoomHeader, RoomPodiumModal, RoomWaitingLobby, etc.
+│   ├── notifications/      # NotificationBell, NotificationItemCard, NotificationToast
+│   ├── profile/            # ProfileHeader, ProfileStatsCard, ProfileMatchHistory, FriendsList, etc.
+│   └── ranking/            # RankingPodium, RankingTable, RankingTypeFilter
+├── composables/            # Lógica reactiva reutilizable (useGame, useMultiplayerRoom, useAuth, etc.)
+├── stores/                 # Stores de Pinia (auth, notifications)
+└── views/                  # Vistas de Vue Router (Home, Game, Profile, Ranking, Multiplayer)
+```
 
 ---
 

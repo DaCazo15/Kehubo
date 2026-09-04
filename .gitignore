@@ -1,4 +1,4 @@
-# Logs
+# Logs & Debug
 logs
 *.log
 npm-debug.log*
@@ -6,21 +6,45 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
 
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+
+# Build Outputs & Cache
 dist
 dist-ssr
-*.local
+*.tsbuildinfo
+.firebase
+
+# Environment Files (Keep .env.example tracked)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Repository Bundles & Extraction Dumps
 *.bundle
 *.xml
+repo.bundle
+repomix-output.xml
 
-# Editor directories and files
+# Editor Directories and Files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
