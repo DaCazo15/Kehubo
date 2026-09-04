@@ -88,7 +88,7 @@ async function handleSubmit() {
   >
     <div
       v-if="isAuthModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
     >
       <!-- Backdrop con desenfoque profundo y tinte oscuro -->
       <div 
@@ -98,7 +98,8 @@ async function handleSubmit() {
 
       <!-- Contenedor del Modal con estética Albion / Gaming Portal -->
       <div
-        class="relative w-full max-w-md bg-slate-900/95 border border-amber-500/40 rounded-2xl shadow-2xl shadow-amber-500/10 p-6 sm:p-8 overflow-hidden z-10 my-8"
+        class="relative w-full bg-slate-900/95 border border-amber-500/40 rounded-2xl shadow-2xl shadow-amber-500/10 p-5 sm:p-7 overflow-hidden z-10 my-auto transition-all duration-300"
+        :class="authMode === 'register' ? 'max-w-2xl' : 'max-w-md'"
         @click.stop
       >
         <!-- Decoraciones lumínicas de fondo en el modal -->
@@ -108,7 +109,7 @@ async function handleSubmit() {
         <!-- Botón cerrar (X) -->
         <button
           @click="closeAuthModal"
-          class="absolute top-4 right-4 text-slate-400 hover:text-amber-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors"
+          class="absolute top-3 right-3 text-slate-400 hover:text-amber-400 p-1.5 rounded-lg hover:bg-slate-800/80 transition-colors z-20"
           aria-label="Cerrar modal"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,26 +118,26 @@ async function handleSubmit() {
         </button>
 
         <!-- Cabecera / Emblema -->
-        <div class="text-center mb-6">
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-linear-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/30 mb-3 shadow-inner">
-            <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="text-center mb-3 sm:mb-4">
+          <div class="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/30 mb-2 shadow-inner">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h3 class="text-2xl font-black tracking-wide uppercase text-transparent bg-clip-text bg-linear-to-r from-amber-300 via-amber-100 to-pink-400 font-['Montserrat']">
+          <h3 class="text-xl sm:text-2xl font-black tracking-wide uppercase text-transparent bg-clip-text bg-linear-to-r from-amber-300 via-amber-100 to-pink-400 font-['Montserrat']">
             {{ authMode === 'login' ? 'Portal del Guerrero' : 'Forja tu Leyenda' }}
           </h3>
-          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+          <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
             {{ authMode === 'login' ? 'Accede para sincronizar tu progreso y ranking' : 'Crea tu cuenta para competir en la tabla global' }}
           </p>
         </div>
 
         <!-- Selector de pestañas Login / Register dentro del mismo modal -->
-        <div class="flex p-1 bg-slate-950/70 border border-slate-800 rounded-xl mb-6">
+        <div class="flex p-1 bg-slate-950/70 border border-slate-800 rounded-xl mb-3 sm:mb-4">
           <button
             type="button"
             @click="authMode = 'login'"
-            class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 uppercase tracking-wider"
+            class="flex-1 py-1.5 sm:py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider"
             :class="authMode === 'login' 
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm' 
               : 'text-slate-400 hover:text-slate-200'"
@@ -146,7 +147,7 @@ async function handleSubmit() {
           <button
             type="button"
             @click="authMode = 'register'"
-            class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all duration-200 uppercase tracking-wider"
+            class="flex-1 py-1.5 sm:py-2 text-xs font-bold rounded-lg transition-all duration-200 uppercase tracking-wider"
             :class="authMode === 'register' 
               ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-sm' 
               : 'text-slate-400 hover:text-slate-200'"
@@ -158,7 +159,7 @@ async function handleSubmit() {
         <!-- Mensajes de Error -->
         <div 
           v-if="localError || authError" 
-          class="mb-4 p-3 rounded-lg bg-red-950/60 border border-red-500/50 text-red-200 text-xs flex items-start gap-2 animate-shake"
+          class="mb-3 p-2.5 rounded-lg bg-red-950/60 border border-red-500/50 text-red-200 text-xs flex items-start gap-2 animate-shake"
         >
           <svg class="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -171,7 +172,7 @@ async function handleSubmit() {
           type="button"
           @click="loginWithGoogle"
           :disabled="loading"
-          class="w-full py-2.5 px-4 mb-4 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-500 text-slate-200 text-sm font-semibold flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+          class="w-full py-2 px-4 mb-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-500 text-slate-200 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
         >
           <svg class="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
@@ -183,18 +184,21 @@ async function handleSubmit() {
         </button>
 
         <!-- Separador -->
-        <div class="relative flex items-center justify-center my-4">
+        <div class="relative flex items-center justify-center my-2.5">
           <div class="border-t border-slate-800 w-full"></div>
-          <span class="bg-slate-900 px-3 text-[11px] uppercase tracking-widest text-slate-500">correo</span>
+          <span class="bg-slate-900 px-3 text-[10px] sm:text-[11px] uppercase tracking-widest text-slate-500">correo</span>
           <div class="border-t border-slate-800 w-full"></div>
         </div>
 
-        <!-- Formulario -->
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Nombre (sólo en Registro) -->
-          <div v-if="authMode === 'register'">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-              Nombre de Guerrero / Nickname
+        <!-- Formulario: 2 Columnas en Registro, 1 Columna en Login -->
+        <form 
+          @submit.prevent="handleSubmit" 
+          :class="authMode === 'register' ? 'grid grid-cols-1 sm:grid-cols-2 gap-3 space-y-0' : 'space-y-3'"
+        >
+          <!-- Nombre (sólo en Registro - Col 1) -->
+          <div v-if="authMode === 'register'" class="sm:col-span-1">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+              Nombre / Nickname
             </label>
             <div class="relative">
               <input
@@ -202,22 +206,22 @@ async function handleSubmit() {
                 type="text"
                 required
                 placeholder="Ej. LordKael"
-                class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
+                class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition"
               />
             </div>
           </div>
 
-          <!-- Selección de Género (sólo en Registro) -->
-          <div v-if="authMode === 'register'">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          <!-- Selección de Género (sólo en Registro - Col 2) -->
+          <div v-if="authMode === 'register'" class="sm:col-span-1">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
               Identidad de Guerrero (Sexo)
             </label>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-2">
               <!-- Opción Hombre -->
               <button
                 type="button"
                 @click="genero = 'hombre'"
-                class="flex items-center gap-2.5 p-2.5 rounded-xl border transition-all text-left"
+                class="flex items-center gap-2 p-1.5 rounded-xl border transition-all text-left"
                 :class="genero === 'hombre'
                   ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md shadow-amber-500/10 ring-1 ring-amber-400'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'"
@@ -225,11 +229,11 @@ async function handleSubmit() {
                 <img 
                   :src="maleAvatars[0]" 
                   alt="Hombre" 
-                  class="w-8 h-8 rounded-full object-cover border border-amber-400/40 shrink-0"
+                  class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border border-amber-400/40 shrink-0"
                 />
-                <div>
-                  <p class="text-xs font-black uppercase">Hombre</p>
-                  <p class="text-[10px] text-slate-400">Avatar inicial</p>
+                <div class="min-w-0">
+                  <p class="text-[11px] sm:text-xs font-black uppercase truncate">Hombre</p>
+                  <p class="text-[9px] text-slate-400 truncate">Avatar inicial</p>
                 </div>
               </button>
 
@@ -237,7 +241,7 @@ async function handleSubmit() {
               <button
                 type="button"
                 @click="genero = 'mujer'"
-                class="flex items-center gap-2.5 p-2.5 rounded-xl border transition-all text-left"
+                class="flex items-center gap-2 p-1.5 rounded-xl border transition-all text-left"
                 :class="genero === 'mujer'
                   ? 'bg-pink-500/20 border-pink-400 text-pink-200 shadow-md shadow-pink-500/10 ring-1 ring-pink-400'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'"
@@ -245,41 +249,19 @@ async function handleSubmit() {
                 <img 
                   :src="femaleAvatars[0]" 
                   alt="Mujer" 
-                  class="w-8 h-8 rounded-full object-cover border border-pink-400/40 shrink-0"
+                  class="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover border border-pink-400/40 shrink-0"
                 />
-                <div>
-                  <p class="text-xs font-black uppercase">Mujer</p>
-                  <p class="text-[10px] text-slate-400">Avatar inicial</p>
+                <div class="min-w-0">
+                  <p class="text-[11px] sm:text-xs font-black uppercase truncate">Mujer</p>
+                  <p class="text-[9px] text-slate-400 truncate">Avatar inicial</p>
                 </div>
               </button>
             </div>
           </div>
 
-          <!-- Selección de Nacionalidad (sólo en Registro) -->
-          <div v-if="authMode === 'register'">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-              Nacionalidad
-            </label>
-            <div class="relative">
-              <select
-                v-model="country"
-                required
-                class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 outline-none transition appearance-none"
-              >
-                <option value="" disabled selected>Selecciona tu país</option>
-                <option v-for="c in countries" :key="c.code" :value="c.code">
-                  {{ c.flag }} {{ c.name }}
-                </option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Email -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          <!-- Email (Col 1 en Registro, Full en Login) -->
+          <div :class="authMode === 'register' ? 'sm:col-span-1' : ''">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
               Correo Electrónico
             </label>
             <input
@@ -287,13 +269,35 @@ async function handleSubmit() {
               type="email"
               required
               placeholder="tu@reino.com"
-              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
+              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition"
             />
           </div>
 
-          <!-- Contraseña -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          <!-- Selección de Nacionalidad (sólo en Registro - Col 2) -->
+          <div v-if="authMode === 'register'" class="sm:col-span-1">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+              Nacionalidad
+            </label>
+            <div class="relative">
+              <select
+                v-model="country"
+                required
+                class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 outline-none transition appearance-none"
+              >
+                <option value="" disabled selected>Selecciona tu país</option>
+                <option v-for="c in countries" :key="c.code" :value="c.code">
+                  {{ c.flag }} {{ c.name }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contraseña (Col 1 en Registro, Full en Login) -->
+          <div :class="authMode === 'register' ? 'sm:col-span-1' : ''">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
               Contraseña
             </label>
             <input
@@ -301,13 +305,13 @@ async function handleSubmit() {
               type="password"
               required
               placeholder="••••••••"
-              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
+              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition"
             />
           </div>
 
-          <!-- Confirmar Contraseña (sólo en Registro) -->
-          <div v-if="authMode === 'register'">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+          <!-- Confirmar Contraseña (sólo en Registro - Col 2) -->
+          <div v-if="authMode === 'register'" class="sm:col-span-1">
+            <label class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
               Confirmar Contraseña
             </label>
             <input
@@ -315,35 +319,37 @@ async function handleSubmit() {
               type="password"
               required
               placeholder="••••••••"
-              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition"
+              class="w-full bg-slate-950/80 border border-slate-700/80 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition"
             />
           </div>
 
-          <!-- Botón de Envío -->
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full py-3 px-6 rounded-xl font-black uppercase tracking-wider transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
-            :class="authMode === 'login' ? 'game-btn-gold text-slate-950' : 'game-btn-pink text-white'"
-          >
-            <svg 
-              v-if="loading" 
-              class="animate-spin h-5 w-5" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24"
+          <!-- Botón de Envío (Full Width) -->
+          <div :class="authMode === 'register' ? 'sm:col-span-2 pt-1.5' : 'pt-1.5'">
+            <button
+              type="submit"
+              :disabled="loading"
+              class="w-full py-2.5 sm:py-3 px-6 rounded-xl font-black uppercase tracking-wider transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg text-xs sm:text-sm"
+              :class="authMode === 'login' ? 'game-btn-gold text-slate-950' : 'game-btn-pink text-white'"
             >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>
-              {{ loading ? 'Conectando...' : (authMode === 'login' ? 'Ingresar al Juego' : 'Crear mi Cuenta') }}
-            </span>
-          </button>
+              <svg 
+                v-if="loading" 
+                class="animate-spin h-4 w-4 sm:h-5 sm:w-5" 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>
+                {{ loading ? 'Conectando...' : (authMode === 'login' ? 'Ingresar al Juego' : 'Crear mi Cuenta') }}
+              </span>
+            </button>
+          </div>
         </form>
 
         <!-- Pie de modal con alternancia rápida -->
-        <div class="mt-6 text-center text-xs text-slate-400">
+        <div class="mt-4 text-center text-xs text-slate-400">
           <span v-if="authMode === 'login'">
             ¿Aún no tienes cuenta?
             <button 

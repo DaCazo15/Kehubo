@@ -42,7 +42,7 @@ const {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none">
+  <div class="h-screen max-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none overflow-hidden">
     
     <!-- Cabecera del Juego con botón Reiniciar y Salir -->
     <Header 
@@ -62,9 +62,9 @@ const {
       :animatingTime="animatingTime"
     />
 
-    <!-- Contenedor del Tablero de Cartas (24 cartas: grid 6x4) -->
-    <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-8 flex items-center justify-center">
-      <div class="w-full grid grid-cols-4 sm:grid-cols-6 gap-2.5 sm:gap-4 p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm">
+    <!-- Contenedor del Tablero de Cartas (24 cartas: grid 6x4 o 4x6 en movil) -->
+    <main class="flex-1 w-full max-w-5xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-center min-h-0 overflow-hidden">
+      <div class="w-full h-full max-h-full grid grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4 gap-1.5 sm:gap-2.5 md:gap-3 p-2 sm:p-4 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm">
         <Cartas
           v-for="carta in numeros"
           :key="carta.id"

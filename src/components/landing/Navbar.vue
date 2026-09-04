@@ -60,35 +60,35 @@ onUnmounted(() => {
   <header 
     class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 font-['Montserrat']"
     :class="isScrolled 
-      ? 'bg-slate-950/90 backdrop-blur-md border-b border-amber-500/20 shadow-2xl py-3' 
-      : 'bg-linear-to-b from-slate-950/80 via-slate-950/40 to-transparent py-5'"
+      ? 'bg-slate-950/95 backdrop-blur-md border-b border-amber-500/20 shadow-2xl py-2.5 sm:py-3' 
+      : 'bg-linear-to-b from-slate-950/90 via-slate-950/50 to-transparent py-3 sm:py-4'"
   >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between gap-2 sm:gap-4">
         
         <!-- Bloque 1 (Izquierda): Logo -->
-        <div class="flex items-center">
-          <RouterLink to="/" class="flex items-center gap-3 group">
+        <div class="flex items-center shrink-0">
+          <RouterLink to="/" class="flex items-center gap-2 group">
             <img 
               :src="img.isologo" 
               alt="Kehubo Logo" 
-              class="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+              class="h-8 sm:h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]"
             />
           </RouterLink>
         </div>
 
         <!-- Bloque 2 (Centro): Navegación Principal -->
-        <nav class="hidden md:flex items-center gap-1 lg:gap-2">
+        <nav class="hidden md:flex items-center gap-1 lg:gap-1.5">
           <RouterLink 
             to="/" 
-            class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition"
             active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
           >
             Inicio
           </RouterLink>
           <RouterLink 
             to="/ranking" 
-            class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-1.5"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition flex items-center gap-1.5"
             active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
           >
             <span>Ranking</span>
@@ -96,15 +96,15 @@ onUnmounted(() => {
           </RouterLink>
           <RouterLink 
             to="/competitivo" 
-            class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-1.5"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition flex items-center gap-1.5"
             active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
           >
-            <i class="bi bi-people-fill text-amber-400"></i>
+            <i class="bi bi-people-fill text-amber-400 text-xs"></i>
             <span>Salas</span>
           </RouterLink>
           <RouterLink 
             to="/about" 
-            class="px-4 py-2 rounded-lg text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/50 transition-all duration-200"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition"
             active-class="text-amber-400 bg-amber-500/10 border border-amber-500/30"
           >
             About
@@ -112,13 +112,13 @@ onUnmounted(() => {
         </nav>
 
         <!-- Bloque 3 (Derecha): CTA Juego Rápido + Login / Perfil -->
-        <div class="hidden md:flex items-center gap-3">
+        <div class="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
           <!-- Botón Juego Rápido -->
           <RouterLink 
             :to="{ name : 'game-rapido'}" 
-            class="game-btn-pink px-5 py-2 rounded-xl text-white text-xs sm:text-sm font-black flex items-center gap-2"
+            class="game-btn-pink px-3.5 py-1.5 rounded-xl text-white text-xs font-black flex items-center gap-1.5 shadow-md"
           >
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
             </svg>
             <span>Juego Rápido</span>
@@ -128,9 +128,9 @@ onUnmounted(() => {
           <template v-if="!isAuthenticated">
             <button
               @click="openAuthModal('login')"
-              class="game-btn-gold px-5 py-2 rounded-xl text-slate-950 text-xs sm:text-sm font-black flex items-center gap-1.5"
+              class="game-btn-gold px-3.5 py-1.5 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
             >
-              <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3.5 h-3.5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
               </svg>
               <span>Iniciar Sesión</span>
@@ -145,7 +145,7 @@ onUnmounted(() => {
             <div class="relative">
               <button
                 @click="isUserDropdownOpen = !isUserDropdownOpen"
-                class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/40 hover:border-amber-400 transition cursor-pointer"
+                class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/40 hover:border-amber-400 transition cursor-pointer shadow-sm"
               >
                 <img 
                   v-if="userAvatar && !avatarError" 
@@ -153,18 +153,18 @@ onUnmounted(() => {
                   alt="Avatar" 
                   referrerpolicy="no-referrer"
                   @error="avatarError = true"
-                  class="w-8 h-8 rounded-full object-cover border border-amber-400/60 shadow-sm shrink-0"
+                  class="w-7 h-7 rounded-full object-cover border border-amber-400/60 shadow-sm shrink-0"
                 />
                 <div 
                   v-else 
-                  class="w-8 h-8 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black flex items-center justify-center text-xs shadow-sm shrink-0"
+                  class="w-7 h-7 rounded-full bg-linear-to-br from-amber-500 to-pink-500 text-slate-950 font-black flex items-center justify-center text-xs shadow-sm shrink-0"
                 >
                   {{ (userDisplayName || 'G').charAt(0).toUpperCase() }}
                 </div>
-                <span class="text-xs font-bold text-amber-200 max-w-25 truncate">
+                <span class="text-xs font-bold text-amber-200 max-w-24 truncate">
                   {{ userDisplayName }}
                 </span>
-                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>

@@ -68,12 +68,15 @@ const totalPares = computed(() => Math.floor(cardCount.value / 2))
 // Dynamic grid styling for cards
 const gridColsClass = computed(() => {
   if (cardCount.value === 40) {
-    return 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10'
+    return 'grid-cols-5 sm:grid-cols-8 md:grid-cols-10 grid-rows-8 sm:grid-rows-5 md:grid-rows-4'
   }
   if (cardCount.value === 32) {
-    return 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8'
+    return 'grid-cols-4 sm:grid-cols-8 grid-rows-8 sm:grid-rows-4'
   }
-  return 'grid-cols-4 sm:grid-cols-6'
+  if (cardCount.value === 16) {
+    return 'grid-cols-4 grid-rows-4 max-w-2xl'
+  }
+  return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4'
 })
 
 let unsubRoom = null
@@ -274,7 +277,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none">
+  <div 
+    class="min-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none"
+    :class="currentRoom?.status === 'playing' ? 'h-screen max-h-screen overflow-hidden' : ''"
+  >
     
     <!-- Header Multijugador -->
     <header class="w-full bg-slate-950/80 border-b border-slate-800/80 px-4 py-3 flex items-center justify-between backdrop-blur-md sticky top-0 z-30">
@@ -480,7 +486,7 @@ onUnmounted(() => {
     </main>
 
     <!-- ESTADO 2: Partida en Curso con Leaderboard Lateral en Vivo -->
-    <main v-else class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 items-start">
+    <main v-else class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-2 sm:py-4 flex flex-col lg:flex-row gap-3 sm:gap-6 items-start min-h-0 overflow-hidden">
       
       <!-- Columna Izquierda: Clasificación en Tiempo Real -->
       <LiveLeaderboard
@@ -490,7 +496,7 @@ onUnmounted(() => {
       />
 
       <!-- Columna Central: Tablero y Cartas -->
-      <div class="flex-1 w-full space-y-6">
+      <div class="flex-1 w-full space-y-2 sm:space-y-4 min-h-0 flex flex-col justify-center">
         
         <!-- Tablero con Puntos, Pares y Tiempo -->
         <Tablero
@@ -506,7 +512,7 @@ onUnmounted(() => {
 
         <!-- Tablero de Cartas Sincronizado -->
         <div
-          class="w-full grid gap-2.5 sm:gap-4 p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm"
+          class="w-full grid gap-1.5 sm:gap-3 md:gap-4 p-2 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm"
           :class="gridColsClass"
         >
           <Cartas

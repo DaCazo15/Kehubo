@@ -29,17 +29,17 @@ async function handleLogout() {
 </script>
 
 <template>
-  <header class="fixed top-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-amber-500/30 shadow-2xl py-3 font-['Montserrat']">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between">
+  <header class="fixed top-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-amber-500/30 shadow-2xl py-2.5 sm:py-3 font-['Montserrat']">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between gap-2 sm:gap-4">
         
         <!-- Bloque Izquierdo: Volver al Inicio & Logo -->
-        <div class="flex items-center gap-4">
-          <RouterLink to="/" class="flex items-center gap-3 group" title="Volver al Inicio">
+        <div class="flex items-center gap-3 shrink-0">
+          <RouterLink to="/" class="flex items-center gap-2 group" title="Volver al Inicio">
             <img 
               :src="img.isologo" 
               alt="Kehubo Logo" 
-              class="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]"
+              class="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105 filter drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]"
             />
             <span class="hidden sm:inline-block text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-amber-300 transition">
               ← Inicio
@@ -48,10 +48,10 @@ async function handleLogout() {
         </div>
 
         <!-- Bloque Central: Navegación del Usuario -->
-        <nav class="hidden md:flex items-center gap-2">
+        <nav class="hidden md:flex items-center gap-1 lg:gap-2">
           <RouterLink 
             :to="'/perfil/' + (user?.uid || '')" 
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
             :class="isProfileActive 
               ? 'text-amber-300 bg-amber-500/20 border border-amber-500/50 shadow-sm shadow-amber-500/10' 
               : 'text-slate-300 hover:text-amber-300 hover:bg-slate-800/60'"
@@ -61,7 +61,7 @@ async function handleLogout() {
           </RouterLink>
           <RouterLink 
             to="/ranking" 
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider transition-all"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
             :class="isRankingActive 
               ? 'text-amber-300 bg-amber-500/20 border border-amber-500/50 shadow-sm shadow-amber-500/10' 
               : 'text-slate-300 hover:text-amber-300 hover:bg-slate-800/60'"
@@ -71,7 +71,7 @@ async function handleLogout() {
           </RouterLink>
           <RouterLink 
             to="/competitivo" 
-            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-amber-300 hover:bg-slate-800/60 transition"
             active-class="text-amber-300 bg-amber-500/20 border border-amber-500/50"
           >
             <i class="bi bi-people-fill mr-1.5 text-amber-400"></i>
@@ -80,7 +80,7 @@ async function handleLogout() {
         </nav>
 
         <!-- Bloque Derecho: Info del Usuario y Cerrar Sesión / Login -->
-        <div class="hidden md:flex items-center gap-3">
+        <div class="hidden md:flex items-center gap-2 lg:gap-3 shrink-0">
           
           <template v-if="isAuthenticated">
             <!-- Campana de Notificaciones -->
@@ -90,7 +90,7 @@ async function handleLogout() {
             <RouterLink 
               :to="'/perfil/' + (user?.uid || '')" 
               title="Ir a Mi Perfil"
-              class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/80 transition group shadow-sm"
+              class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/80 transition group shadow-sm"
               :class="{ 'ring-1 ring-amber-400 border-amber-400': isProfileActive }"
             >
               <img 
@@ -107,7 +107,7 @@ async function handleLogout() {
               >
                 {{ (userDisplayName || 'G').charAt(0).toUpperCase() }}
               </div>
-              <span class="text-xs font-bold text-amber-200 group-hover:text-amber-100 max-w-28 truncate transition">
+              <span class="text-xs font-bold text-amber-200 group-hover:text-amber-100 max-w-24 truncate transition">
                 {{ userDisplayName }}
               </span>
             </RouterLink>
@@ -115,18 +115,18 @@ async function handleLogout() {
             <!-- Botón Cerrar Sesión -->
             <button
               @click="handleLogout"
-              class="py-3.5 px-3 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+              class="py-3 px-3 rounded-xl bg-red-950/40 hover:bg-red-950/80 border border-red-500/40 hover:border-red-500 text-red-200 hover:text-red-100 text-xs font-bold uppercase tracking-wider flex items-center transition shadow-sm cursor-pointer"
               title="Cerrar Sesión"
             >
               <i class="bi bi-box-arrow-right text-red-400"></i>
-              <span>Salir</span>
+              <!-- <span>Salir</span> -->
             </button>
           </template>
 
           <template v-else>
             <button
               @click="openAuthModal('login')"
-              class="game-btn-gold px-5 py-2 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              class="game-btn-gold px-4 py-1.5 rounded-xl text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <i class="bi bi-box-arrow-in-right"></i>
               <span>Iniciar Sesión</span>

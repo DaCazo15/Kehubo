@@ -73,7 +73,7 @@ export function useGame(options = {}) {
         triggerTimeAnimation('correct')
       } else {
         if (cartasVisiblesAlInicio.value) {
-          puntajeBase.value -= 1
+          puntajeBase.value = Math.max(0, puntajeBase.value - 1)
           tiempo.value += 2
           triggerScoreAnimation('wrong')
           triggerTimeAnimation('wrong')
@@ -94,7 +94,7 @@ export function useGame(options = {}) {
 
   // Cálculos reactivos
   const totalPares = computed(() => Math.floor(cardCount.value / 2))
-  const puntaje = computed(() => puntajeBase.value)
+  const puntaje = computed(() => Math.max(0, puntajeBase.value))
   const progresoPorcentaje = computed(() => {
     if (totalPares.value === 0) return 0
     return Math.round((CartasPares.value.length / totalPares.value) * 100)
