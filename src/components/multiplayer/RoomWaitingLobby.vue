@@ -37,7 +37,7 @@ function copyLink() {
 
 <template>
   <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex items-center justify-center font-['Montserrat']">
-    <div class="w-full game-card-portal rounded-3xl p-6 sm:p-10 border border-amber-500/30 shadow-2xl space-y-8">
+    <div class="w-full game-card-portal rounded-3xl p-4 sm:p-8 border border-amber-500/30 shadow-2xl space-y-8">
       
       <!-- Código y Botones de Invitación -->
       <div class="text-center space-y-4">
