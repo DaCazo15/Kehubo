@@ -13,11 +13,25 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }))
 
-// 2. CORS con orígenes controlados
+// 2. CORS con orígenes controlados y seguros
+const allowedOriginEnv = process.env.ALLOWED_ORIGIN || 'http://localhost:5173'
+const allowedOrigins = allowedOriginEnv === '*' 
+  ? '*' 
+  : allowedOriginEnv.split(',').map(o => o.trim())
+
 app.use(cors({
-  origin: '*', // Permitir peticiones desde el frontend en desarrollo/producción
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins === '*') {
+      return callback(null, true)
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+    return callback(new Error(`Bloqueado por CORS: El origen ${origin} no está autorizado.`))
+  },
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }))
 app.use(express.json({ limit: '100kb' })) // Prevenir ataques por payload gigantes
 
