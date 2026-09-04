@@ -73,9 +73,6 @@ const gridColsClass = computed(() => {
   if (cardCount.value === 32) {
     return 'grid-cols-4 sm:grid-cols-8 grid-rows-8 sm:grid-rows-4'
   }
-  if (cardCount.value === 16) {
-    return 'grid-cols-4 grid-rows-4 max-w-2xl'
-  }
   return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4'
 })
 

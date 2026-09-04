@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { collection, getCountFromServer } from 'firebase/firestore'
 import { db } from '../../../config/firebase'
 
-const userCount = ref<string>('+100')
+const userCount = ref<string>('0')
 
 onMounted(async () => {
   try {

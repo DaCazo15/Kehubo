@@ -30,7 +30,7 @@ function copyColor(hex: string) {
 </script>
 
 <template>
-  <div class="space-y-6 max-h-[80vh] overflow-y-auto pr-1 text-slate-200">
+  <div class="space-y-6 text-slate-200">
     <!-- Barra de Pestañas / Selector de Documento -->
     <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-4">
       <button
@@ -68,7 +68,7 @@ function copyColor(hex: string) {
           </p>
           <ul class="list-disc list-inside space-y-1 pl-2 text-slate-400">
             <li><strong>Datos de perfil público:</strong> Nombre de usuario (o alias de guerrero), foto de perfil y país de procedencia.</li>
-            <li><strong>Estadísticas de juego:</strong> Puntuaciones, tiempos de resolución, historial de partidas y posición en rankings globales/locales.</li>
+            <li><strong>Estadísticas de juego:</strong> Puntuaciones, tiempos de resolución, historial de partidas y posición en el ranking global.</li>
             <li><strong>Datos de autenticación:</strong> Correo electrónico e identificador único gestionado a través de Google Firebase Authentication.</li>
           </ul>
         </section>
@@ -135,7 +135,7 @@ function copyColor(hex: string) {
           </p>
           <ul class="list-disc list-inside space-y-1 pl-2 text-slate-400">
             <li>El uso de bots, scripts o extensiones automáticas para resolver tableros o manipular tiempos.</li>
-            <li>La explotación deliberada de bugs para inflar posiciones en el Ranking Global o Local.</li>
+            <li>La explotación deliberada de bugs para inflar posiciones en el Ranking Global.</li>
             <li>Nombres de usuario, salas o mensajes que contengan lenguaje de odio, acoso o discriminación.</li>
           </ul>
         </section>

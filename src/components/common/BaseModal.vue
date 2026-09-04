@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full'
 
@@ -38,12 +38,30 @@ function handleBackdropClick() {
   }
 }
 
+function lockBodyScroll(lock: boolean) {
+  if (typeof document !== 'undefined') {
+    if (lock) {
+      document.body.classList.add('overflow-hidden')
+    } else {
+      document.body.classList.remove('overflow-hidden')
+    }
+  }
+}
+
+watch(() => props.isOpen, (isOpen) => {
+  lockBodyScroll(!!isOpen)
+}, { immediate: true })
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  if (props.isOpen) {
+    lockBodyScroll(true)
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  lockBodyScroll(false)
 })
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -67,7 +85,7 @@ const sizeClasses: Record<ModalSize, string> = {
   >
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto font-['Montserrat']"
+      class="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 overflow-hidden font-['Montserrat']"
     >
       <!-- Backdrop oscurecido y blur -->
       <div 
@@ -75,9 +93,9 @@ const sizeClasses: Record<ModalSize, string> = {
         @click="handleBackdropClick"
       ></div>
 
-      <!-- Contenedor del Modal -->
+      <!-- Contenedor del Modal Proporcional -->
       <div
-        class="relative w-full rounded-3xl bg-slate-900 border border-amber-500/30 p-5 sm:p-8 shadow-2xl shadow-amber-500/10 z-10 transition-all transform animate-fadeIn my-auto"
+        class="relative w-full max-h-[calc(100dvh-1.25rem)] sm:max-h-[calc(100dvh-2.5rem)] flex flex-col rounded-2xl sm:rounded-3xl bg-slate-900 border border-amber-500/30 shadow-2xl shadow-amber-500/10 z-10 transition-all transform animate-fadeIn my-auto overflow-hidden"
         :class="sizeClasses[size] || 'max-w-lg'"
         @click.stop
       >
@@ -86,7 +104,7 @@ const sizeClasses: Record<ModalSize, string> = {
           v-if="showClose"
           type="button"
           @click="emit('close')"
-          class="absolute top-4 right-4 text-slate-400 hover:text-amber-400 p-2 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer z-20"
+          class="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-amber-400 p-2 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer z-20"
           title="Cerrar modal"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,21 +113,27 @@ const sizeClasses: Record<ModalSize, string> = {
         </button>
 
         <!-- Slot Cabecera / Icono -->
-        <header v-if="$slots.header || title" class="space-y-2 mb-4">
+        <header 
+          v-if="$slots.header || title" 
+          class="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b border-slate-800/60"
+        >
           <slot name="header">
-            <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-100 tracking-tight">
+            <h2 class="text-lg sm:text-2xl font-black uppercase text-slate-100 tracking-tight pr-8">
               {{ title }}
             </h2>
           </slot>
         </header>
 
-        <!-- Slot Cuerpo Principal -->
-        <main class="space-y-4">
+        <!-- Slot Cuerpo Principal Scrollable -->
+        <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 overscroll-contain custom-scrollbar space-y-4">
           <slot></slot>
         </main>
 
         <!-- Slot Pie de Modal -->
-        <footer v-if="$slots.footer" class="mt-6 pt-4 border-t border-slate-800/80">
+        <footer 
+          v-if="$slots.footer" 
+          class="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-800/80 bg-slate-900/95"
+        >
           <slot name="footer"></slot>
         </footer>
       </div>

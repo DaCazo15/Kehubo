@@ -30,7 +30,6 @@ const {
   bestTime,
   totalScore,
   globalRank,
-  localRank,
   friendshipState,
   friendActionLoading,
   fetchProfile,
@@ -109,7 +108,6 @@ watch(user, () => {
         :best-time="bestTime"
         :total-score="totalScore"
         :global-rank="globalRank"
-        :local-rank="localRank"
         :country-name="displayCountry?.name"
       />
 

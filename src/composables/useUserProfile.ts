@@ -16,7 +16,6 @@ export function useUserProfile(profileId: Ref<string>) {
   const matchHistory = ref<ScoreRecord[]>([])
   const bestMatches = ref<ScoreRecord[]>([])
   const globalRank = ref<number | null>(null)
-  const localRank = ref<number | null>(null)
   const friendshipState = ref<string>('none')
   const pendingNotification = ref<any>(null)
   const friendActionLoading = ref<boolean>(false)
@@ -200,31 +199,6 @@ export function useUserProfile(profileId: Ref<string>) {
       }
       if (!foundGlobal) globalRank.value = null
 
-      // Local
-      const userCountryCode = profileData.value?.country?.toUpperCase()
-      if (userCountryCode) {
-        const seenLocal = new Set<string>()
-        let lRank = 1
-        let foundLocal = false
-        for (const s of allScores) {
-          if (s.country?.toUpperCase() === userCountryCode) {
-            const uid = s.userId || s.displayName
-            if (!seenLocal.has(uid)) {
-              seenLocal.add(uid)
-              if (s.userId === profileId.value) {
-                localRank.value = lRank
-                foundLocal = true
-                break
-              }
-              lRank++
-            }
-          }
-        }
-        if (!foundLocal) localRank.value = null
-      } else {
-        localRank.value = null
-      }
-
     } catch (err) {
       console.error('Error calculando rankings:', err)
     }
@@ -244,7 +218,6 @@ export function useUserProfile(profileId: Ref<string>) {
     bestTime,
     totalScore,
     globalRank,
-    localRank,
     friendshipState,
     friendActionLoading,
     fetchProfile,

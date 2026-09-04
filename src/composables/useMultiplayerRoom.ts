@@ -39,7 +39,7 @@ export function useMultiplayerRoom() {
 
   /**
    * Genera el mazo aleatorio sincronizado para la sala.
-   * Utilizado como fallback en entornos de desarrollo local.
+   * Cada carta tiene su valor numérico real asignado.
    */
   function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false): Card[] {
     const paresCount = Math.floor(cardCount / 2)
@@ -50,7 +50,7 @@ export function useMultiplayerRoom() {
 
     const cards: Card[] = base.map((valor, index) => ({
       id: index + 1,
-      valor: cartasVisibles ? valor : null,
+      valor,
       revelada: cartasVisibles,
       encontrada: false
     }))
@@ -399,10 +399,16 @@ export function useMultiplayerRoom() {
     }
   }
 
-  // Iniciar la partida en la sala (solo moderador)
+  // Iniciar la partida en la sala (solo moderador, mínimo 2 jugadores)
   async function startRoomGame(roomId: string) {
-    if (!roomId) return
+    if (!roomId) return { success: false, error: 'ID de sala inválido' }
     try {
+      const playersSnap = await getDocs(collection(db, 'rooms', roomId, 'players'))
+      if (playersSnap.size < 2) {
+        error.value = 'Se requieren al menos 2 jugadores para iniciar la batalla multijugador.'
+        return { success: false, error: error.value }
+      }
+
       const roomRef = doc(db, 'rooms', roomId)
       // Regenerar un mazo fresco sincronizado antes de arrancar
       const roomSnap = await getDoc(roomRef)
@@ -415,9 +421,13 @@ export function useMultiplayerRoom() {
           'config.deck': freshDeck,
           startedAt: serverTimestamp()
         })
+        return { success: true }
       }
-    } catch (err) {
+      return { success: false, error: 'Sala no encontrada' }
+    } catch (err: any) {
       console.error('Error al iniciar la partida en sala:', err)
+      error.value = 'Error al iniciar la partida: ' + (err?.message || err)
+      return { success: false, error: error.value }
     }
   }
 

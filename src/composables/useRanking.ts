@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, onSnapshot, query, limit, type Unsubscribe } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from './useAuth'
@@ -9,8 +9,6 @@ export function useRanking() {
   
   const leaderboard = ref<ScoreRecord[]>([])
   const loading = ref<boolean>(true)
-  const rankingType = ref<'global' | 'local'>('global')
-  const locationError = ref<string>('')
   let unsubscribe: Unsubscribe | (() => void) | null = null
 
   function listenToLeaderboard() {
@@ -59,7 +57,6 @@ export function useRanking() {
 
         const uniqueDocs: ScoreRecord[] = []
         const seenUsers = new Set<string>()
-        const isLocal = rankingType.value === 'local'
 
         for (const docItem of rawDocs) {
           const identifier = (docItem.userId && docItem.userId !== 'anonimo') ? docItem.userId : (docItem.displayName || '')
@@ -67,12 +64,6 @@ export function useRanking() {
             let resolvedCountry = docItem.country ? String(docItem.country).toUpperCase() : (userCountryMap.get(identifier) || '')
             if (!resolvedCountry && docItem.userId === currentUid && currentCountry) {
               resolvedCountry = currentCountry
-            }
-
-            if (isLocal && currentCountry) {
-              if (resolvedCountry !== currentCountry) {
-                continue
-              }
             }
 
             seenUsers.add(identifier)
@@ -95,25 +86,6 @@ export function useRanking() {
     }
   }
 
-  function handleLocalClick() {
-    if (!userCountry.value) {
-      locationError.value = 'Configura tu país en tu perfil para ver el ranking de tu nación.'
-      setTimeout(() => { locationError.value = '' }, 5000)
-      return
-    }
-    rankingType.value = 'local'
-  }
-
-  watch(rankingType, () => {
-    listenToLeaderboard()
-  })
-
-  watch(userCountry, () => {
-    if (rankingType.value === 'local') {
-      listenToLeaderboard()
-    }
-  })
-
   onMounted(() => {
     listenToLeaderboard()
   })
@@ -130,10 +102,6 @@ export function useRanking() {
     topThree,
     remainingLeaderboard,
     loading,
-    rankingType,
-    locationError,
-    userCountry,
-    handleLocalClick,
     refreshLeaderboard: listenToLeaderboard
   }
 }

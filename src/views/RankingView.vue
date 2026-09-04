@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useAuth } from '../composables/useAuth'
 import { useRanking } from '../composables/useRanking'
-import RankingTypeFilter from '../components/ranking/RankingTypeFilter.vue'
 import RankingPodium from '../components/ranking/RankingPodium.vue'
 import RankingTable from '../components/ranking/RankingTable.vue'
 
@@ -10,11 +9,7 @@ const {
   leaderboard,
   topThree,
   remainingLeaderboard,
-  loading,
-  rankingType,
-  locationError,
-  userCountry,
-  handleLocalClick
+  loading
 } = useRanking()
 </script>
 
@@ -30,18 +25,6 @@ const {
         <p class="text-sm text-slate-400 max-w-xl mx-auto">
           Los mejores tiempos y puntajes registrados en Kehubo. ¿Tienes lo necesario para alcanzar el top 1?
         </p>
-
-        <!-- Toggle Global / Local -->
-        <RankingTypeFilter
-          v-model:ranking-type="rankingType"
-          :user-country="userCountry"
-          @local-click="handleLocalClick"
-        />
-
-        <!-- Mensaje de aviso si no tiene país configurado -->
-        <div v-if="locationError" class="p-3 max-w-md mx-auto rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold animate-fadeIn">
-          {{ locationError }}
-        </div>
       </div>
 
       <!-- Estado: Cargando -->

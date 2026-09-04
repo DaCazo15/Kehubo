@@ -12,7 +12,6 @@ const emit = defineEmits<{
 }>()
 
 const cardOptions = [
-  { count: 16, tag: 'Rápido', icon: 'bi-lightning-charge-fill' },
   { count: 24, tag: 'Normal', icon: 'bi-controller' },
   { count: 32, tag: 'Desafío', icon: 'bi-fire' },
   { count: 40, tag: 'Épico', icon: 'bi-trophy-fill' }
@@ -40,7 +39,7 @@ const cardOptions = [
       <label class="text-xs font-black uppercase tracking-wider text-slate-300">
         Cantidad de Cartas
       </label>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button
           v-for="opt in cardOptions"
           :key="opt.count"

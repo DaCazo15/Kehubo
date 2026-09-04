@@ -89,7 +89,12 @@ function copyLink() {
           <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
             Guerreros en Sala ({{ roomPlayers.length }}/4)
           </h3>
-          <span class="text-[11px] text-slate-500">Mínimo 1 jugador para iniciar</span>
+          <span 
+            class="text-[11px] font-bold"
+            :class="roomPlayers.length >= 2 ? 'text-emerald-400' : 'text-amber-400'"
+          >
+            {{ roomPlayers.length >= 2 ? 'Listo para el combate' : 'Mínimo 2 jugadores para iniciar' }}
+          </span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -159,7 +164,6 @@ function copyLink() {
               @change="emit('updateConfig', { cardCount: Number(($event.target as HTMLSelectElement).value) })"
               class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer"
             >
-              <option :value="16">16 Cartas (8 Pares)</option>
               <option :value="24">24 Cartas (12 Pares)</option>
               <option :value="32">32 Cartas (16 Pares)</option>
               <option :value="40">40 Cartas (20 Pares)</option>
@@ -182,20 +186,27 @@ function copyLink() {
       </div>
 
       <!-- Botón de Inicio / Espera -->
-      <div class="pt-2 text-center">
-        <BaseButton
-          v-if="isHost"
-          variant="gold"
-          size="lg"
-          rounded="2xl"
-          block
-          @click="emit('startGame')"
-        >
-          <template #icon-left>
-            <i class="bi bi-play-fill text-xl"></i>
-          </template>
-          <span>Iniciar Partida Multijugador</span>
-        </BaseButton>
+      <div class="pt-2 text-center space-y-2">
+        <template v-if="isHost">
+          <BaseButton
+            variant="gold"
+            size="lg"
+            rounded="2xl"
+            block
+            :disabled="roomPlayers.length < 2"
+            @click="emit('startGame')"
+          >
+            <template #icon-left>
+              <i class="bi bi-play-fill text-xl"></i>
+            </template>
+            <span>{{ roomPlayers.length >= 2 ? 'Iniciar Partida Multijugador' : 'Esperando Jugadores (Mín. 2)' }}</span>
+          </BaseButton>
+
+          <p v-if="roomPlayers.length < 2" class="text-xs text-amber-400/80 font-semibold flex items-center justify-center gap-1.5">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Comparte el código o enlace de la sala. Se requieren al menos 2 jugadores para iniciar.</span>
+          </p>
+        </template>
 
         <div v-else class="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-amber-300 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
           <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
