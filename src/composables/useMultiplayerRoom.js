@@ -33,7 +33,15 @@ export function useMultiplayerRoom() {
     return `KH-${code}`
   }
 
-  // Genera el mazo aleatorio sincronizado
+  /**
+   * Genera el mazo aleatorio sincronizado para la sala.
+   * 
+   * 🛡️ NOTA DE ARQUITECTURA Y SEGURIDAD (Riesgo Residual Client-Side):
+   * Actualmente el mazo sincronizado se comparte en el documento de la sala para
+   * permitir partidas multijugador P2P/Serverless sin backend de Cloud Functions dedicado.
+   * En una arquitectura con backend server-side con Admin SDK, los valores ocultos
+   * deben mantenerse en servidor y revelarse individualmente por RPC al voltear.
+   */
   function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false) {
     const paresCount = Math.floor(cardCount / 2)
     const base = []
@@ -290,19 +298,27 @@ export function useMultiplayerRoom() {
   }
 
   // Actualizar el progreso del jugador actual en la sala
+  // 🛡️ Integridad: validación de límites matemáticos antes de enviar a Firestore
   async function updatePlayerProgress(roomId, { score, pairsFound, isFinished, finishTime, finishSeconds }) {
     if (!roomId) return
     const player = getCurrentPlayerData()
 
     try {
+      const maxCardCount = currentRoom.value?.config?.cardCount || 40
+      const maxPossiblePairs = Math.floor(maxCardCount / 2)
+
       const playerRef = doc(db, 'rooms', roomId, 'players', player.uid)
       const updates = {}
-      if (score !== undefined) updates.score = score
-      if (pairsFound !== undefined) updates.pairsFound = pairsFound
+      if (score !== undefined) {
+        updates.score = Math.max(0, Math.floor(Number(score) || 0))
+      }
+      if (pairsFound !== undefined) {
+        updates.pairsFound = Math.min(maxPossiblePairs, Math.max(0, Math.floor(Number(pairsFound) || 0)))
+      }
       if (isFinished) {
         updates.status = 'finished'
         updates.finishTime = finishTime || '--:--'
-        updates.finishSeconds = finishSeconds || 0
+        updates.finishSeconds = Math.max(0, Number(finishSeconds) || 0)
       }
 
       await updateDoc(playerRef, updates)
