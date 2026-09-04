@@ -30,7 +30,7 @@ function handleToastClick() {
   >
     <div
       v-if="activeToast"
-      class="fixed top-20 right-4 z-50 max-w-sm w-full bg-slate-950/95 backdrop-blur-xl border border-amber-500/60 rounded-2xl p-4 shadow-2xl shadow-amber-500/20 font-['Montserrat'] cursor-pointer animate-pulse-glow"
+      class="fixed top-20 left-3 right-3 sm:left-auto sm:right-4 sm:max-w-sm sm:w-full z-50 bg-slate-950/95 backdrop-blur-xl border border-amber-500/60 rounded-2xl p-4 shadow-2xl shadow-amber-500/20 font-['Montserrat'] cursor-pointer animate-pulse-glow"
       @click="handleToastClick"
     >
       <div class="flex items-start gap-3">

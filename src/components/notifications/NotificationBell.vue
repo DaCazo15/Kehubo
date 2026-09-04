@@ -91,35 +91,52 @@ function handleNotificationClick(notif: NotificationItem) {
       </span>
     </button>
 
-    <!-- Menú Desplegable de Notificaciones -->
+    <!-- Fondo Oscuro en Móvil para cerrar al tocar fuera -->
     <div
       v-if="isOpen"
-      class="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn"
+      class="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-40 sm:hidden animate-fadeIn"
+      @click="closeDropdown"
+    ></div>
+
+    <!-- Menú Desplegable de Notificaciones Proporcional -->
+    <div
+      v-if="isOpen"
+      class="fixed left-3 right-3 top-18 sm:top-full sm:mt-2 sm:right-0 sm:left-auto sm:w-96 sm:absolute bg-slate-900/95 sm:bg-slate-900 backdrop-blur-xl border border-slate-700/90 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn max-h-[calc(100dvh-5.5rem)] sm:max-h-120 flex flex-col"
     >
       <!-- Cabecera del Panel -->
-      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 shrink-0">
         <div class="flex items-center gap-2">
           <i class="bi bi-bell-fill text-amber-400 text-sm"></i>
           <span class="text-xs font-black uppercase tracking-wider text-slate-100">
             Avisos del Reino
           </span>
           <span v-if="unreadCount > 0" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-            {{ unreadCount }} sin leer
+            {{ unreadCount }}
           </span>
         </div>
 
-        <button
-          v-if="unreadCount > 0"
-          type="button"
-          @click="markAllAsRead"
-          class="text-[10px] text-amber-400 hover:text-amber-300 font-bold uppercase tracking-wider transition cursor-pointer hover:underline"
-        >
-          Leídas todas
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="unreadCount > 0"
+            type="button"
+            @click="markAllAsRead"
+            class="text-[10px] text-amber-400 hover:text-amber-300 font-bold uppercase tracking-wider transition cursor-pointer hover:underline"
+          >
+            Leídas todas
+          </button>
+          <button
+            type="button"
+            @click="closeDropdown"
+            class="sm:hidden text-slate-400 hover:text-slate-200 p-1 text-xs cursor-pointer ml-1"
+            aria-label="Cerrar avisos"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Lista de Notificaciones -->
-      <div class="max-h-96 overflow-y-auto divide-y divide-slate-800/40">
+      <div class="overflow-y-auto flex-1 divide-y divide-slate-800/40 min-h-0">
         <!-- Cargando -->
         <div v-if="loading && notifications.length === 0" class="p-8 text-center space-y-2">
           <div class="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>

@@ -183,7 +183,7 @@ export function useGame(options: UseGameOptions = {}) {
       const photo = userAvatar.value || ''
 
       // 1. Registrar partida en colección 'scores'
-      await addDoc(collection(db, 'scores'), {
+      const newDocRef = await addDoc(collection(db, 'scores'), {
         userId: uid,
         displayName: name,
         photoURL: photo,
@@ -217,34 +217,87 @@ export function useGame(options: UseGameOptions = {}) {
         }
       }
 
-      // 3. Emitir notificaciones a los jugadores superados
-      try {
-        const scoresRef = collection(db, 'scores')
-        const q = query(
-          scoresRef,
-          where('difficulty', '==', cardCount.value),
-          limit(50)
-        )
-        const snap = await getDocs(q)
-        if (!snap.empty) {
-          const rivalScores = snap.docs
-            .map(d => ({ id: d.id, ...d.data() } as any))
-            .filter(d => d.userId && d.userId !== 'anonimo' && d.userId !== uid)
+      // 3. Emitir notificaciones a los jugadores superados legítimamente
+      if (uid && uid !== 'anonimo') {
+        try {
+          const scoresRef = collection(db, 'scores')
+          const q = query(
+            scoresRef,
+            limit(150)
+          )
+          const snap = await getDocs(q)
+          if (!snap.empty) {
+            const rawDocs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any))
+            
+            // Función auxiliar para comparar marcas (Menor tiempo en segundos es mejor; a igual tiempo, mayor puntaje como desempate)
+            const isBetter = (secA: number, scoreA: number, secB: number, scoreB: number) => {
+              if (secA !== secB) return secA < secB
+              return scoreA > scoreB
+            }
 
-          const notifiedUserIds = new Set<string>()
-          for (const rival of rivalScores) {
-            const rivalScore = Number(rival.score) || 0
-            const rivalSeconds = Number(rival.seconds) || 9999
+            // 1. Obtener la mejor marca previa del jugador actual (excluyendo este nuevo registro recién creado)
+            let prevBestSeconds = 999999
+            let prevBestScore = -1
+            
+            for (const docItem of rawDocs) {
+              if (docItem.userId === uid && docItem.id !== newDocRef.id) {
+                const sec = Number(docItem.seconds) || 999999
+                const s = Number(docItem.score) || 0
+                if (isBetter(sec, s, prevBestSeconds, prevBestScore)) {
+                  prevBestSeconds = sec
+                  prevBestScore = s
+                }
+              }
+            }
 
-            // Si el jugador actual obtuvo mejor puntaje o a igual puntaje menor tiempo
-            const isBetterScore = matchScore > rivalScore
-            const isBetterTime = matchScore === rivalScore && matchSeconds < rivalSeconds
+            // 2. Solo continuar si el jugador logró un nuevo récord personal (menor tiempo)
+            const hasNewPersonalBest = isBetter(matchSeconds, matchScore, prevBestSeconds, prevBestScore)
 
-            if ((isBetterScore || isBetterTime) && !notifiedUserIds.has(rival.userId)) {
-              notifiedUserIds.add(rival.userId)
+            if (hasNewPersonalBest) {
+              // 3. Mapear la mejor marca de cada rival único
+              const rivalBestMap = new Map<string, { userId: string, score: number, seconds: number, name: string }>()
 
-              // Limitar a máximo 3 rivales directos superados por partida
-              if (notifiedUserIds.size <= 3) {
+              for (const docItem of rawDocs) {
+                const rivalUid = docItem.userId
+                if (!rivalUid || rivalUid === 'anonimo' || rivalUid === uid) continue
+
+                const sec = Number(docItem.seconds) || 999999
+                const s = Number(docItem.score) || 0
+                const existing = rivalBestMap.get(rivalUid)
+
+                if (!existing || isBetter(sec, s, existing.seconds, existing.score)) {
+                  rivalBestMap.set(rivalUid, {
+                    userId: rivalUid,
+                    score: s,
+                    seconds: sec,
+                    name: docItem.displayName || 'Guerrero'
+                  })
+                }
+              }
+
+              // 4. Encontrar rivales legítimamente superados:
+              // - Antes de esta partida, el rival tenía un mejor tiempo que el jugador (o el jugador no tenía récord)
+              // - Con esta nueva partida, el tiempo del jugador superó al rival
+              const rivalsSurpassed: { userId: string, score: number, seconds: number }[] = []
+
+              for (const rival of rivalBestMap.values()) {
+                const rivalWasAhead = prevBestSeconds >= 999999 || isBetter(rival.seconds, rival.score, prevBestSeconds, prevBestScore)
+                const playerNowAhead = isBetter(matchSeconds, matchScore, rival.seconds, rival.score)
+
+                if (rivalWasAhead && playerNowAhead) {
+                  rivalsSurpassed.push(rival)
+                }
+              }
+
+              // Ordenar a los rivales superados por tiempo ascendente (los de mejor tiempo primero)
+              rivalsSurpassed.sort((a, b) => {
+                if (a.seconds !== b.seconds) return a.seconds - b.seconds
+                return b.score - a.score
+              })
+
+              // Notificar únicamente a los rivales directos superados (máximo 3)
+              const toNotify = rivalsSurpassed.slice(0, 3)
+              for (const rival of toNotify) {
                 notificationStore.emitNotification({
                   targetUserId: rival.userId,
                   senderUserId: uid,
@@ -252,7 +305,7 @@ export function useGame(options: UseGameOptions = {}) {
                   senderAvatar: photo,
                   senderCountry: userCountry.value || userProfile.value?.country || '',
                   type: 'record_beaten',
-                  message: `¡${name} ha superado tu récord de ${cardCount.value} cartas con un tiempo de ${matchTime} y ${matchScore} pts!`,
+                  message: `¡${name} ha superado tu récord con un tiempo de ${matchTime} y ${matchScore} pts!`,
                   score: matchScore,
                   time: matchTime,
                   seconds: matchSeconds,
@@ -261,9 +314,9 @@ export function useGame(options: UseGameOptions = {}) {
               }
             }
           }
+        } catch (notifErr) {
+          console.warn('Error verificando rivales superados para notificar:', notifErr)
         }
-      } catch (notifErr) {
-        console.warn('Error verificando rivales superados para notificar:', notifErr)
       }
 
       scoreSaved.value = true

@@ -43,16 +43,16 @@ export function useRanking() {
           }
         }
 
-        // Ordenar: Mayor puntuación primero; a igual puntaje, menor tiempo
+        // Ordenar: Menor tiempo primero (quien lo hizo en menos segundos gana el récord); a igual tiempo, mayor puntuación
         rawDocs.sort((a, b) => {
+          const secA = Number(a.seconds) || 999999
+          const secB = Number(b.seconds) || 999999
+          if (secA !== secB) {
+            return secA - secB
+          }
           const scoreA = Number(a.score) || 0
           const scoreB = Number(b.score) || 0
-          if (scoreB !== scoreA) {
-            return scoreB - scoreA
-          }
-          const secA = Number(a.seconds) || 9999
-          const secB = Number(b.seconds) || 9999
-          return secA - secB
+          return scoreB - scoreA
         })
 
         const uniqueDocs: ScoreRecord[] = []

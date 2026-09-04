@@ -146,12 +146,12 @@ export function useUserProfile(profileId: Ref<string>) {
       })
       matchHistory.value = scoresList
 
-      // Mejores partidas (mayor puntaje y menor tiempo)
+      // Mejores partidas (menor tiempo primero, y mayor puntaje como desempate)
       const sortedBest = [...scoresList].sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score
-        const secA = a.seconds ?? 9999
-        const secB = b.seconds ?? 9999
-        return secA - secB
+        const secA = a.seconds ?? 999999
+        const secB = b.seconds ?? 999999
+        if (secA !== secB) return secA - secB
+        return (b.score || 0) - (a.score || 0)
       })
       bestMatches.value = sortedBest.slice(0, 3)
 
@@ -175,10 +175,10 @@ export function useUserProfile(profileId: Ref<string>) {
       const allScores = allScoresSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
 
       allScores.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score
-        const secA = a.seconds ?? 9999
-        const secB = b.seconds ?? 9999
-        return secA - secB
+        const secA = a.seconds ?? 999999
+        const secB = b.seconds ?? 999999
+        if (secA !== secB) return secA - secB
+        return (b.score || 0) - (a.score || 0)
       })
 
       // Global

@@ -42,13 +42,13 @@ const emit = defineEmits<{
         :class="{
           'bg-amber-500': notification.type === 'friend_request',
           'bg-emerald-500': notification.type === 'friend_accepted',
-          'bg-pink-500': notification.type === 'score_beaten',
+          'bg-pink-500': notification.type === 'score_beaten' || notification.type === 'record_beaten',
           'bg-purple-500': notification.type === 'room_invite'
         }"
       >
         <i v-if="notification.type === 'friend_request'" class="bi bi-person-plus-fill"></i>
         <i v-else-if="notification.type === 'friend_accepted'" class="bi bi-check-circle-fill"></i>
-        <i v-else-if="notification.type === 'score_beaten'" class="bi bi-trophy-fill"></i>
+        <i v-else-if="notification.type === 'score_beaten' || notification.type === 'record_beaten'" class="bi bi-trophy-fill"></i>
         <i v-else-if="notification.type === 'room_invite'" class="bi bi-controller"></i>
         <i v-else class="bi bi-bell-fill"></i>
       </span>
@@ -58,14 +58,14 @@ const emit = defineEmits<{
     <div class="flex-1 min-w-0 space-y-1">
       <div class="flex items-center justify-between gap-1">
         <h4 class="text-xs font-black text-slate-200 truncate">
-          {{ notification.title }}
+          {{ notification.title || (notification.type === 'record_beaten' || notification.type === 'score_beaten' ? '¡Récord Superado!' : (notification.type === 'friend_request' ? 'Solicitud de Amistad' : 'Aviso del Reino')) }}
         </h4>
         <span class="text-[10px] text-slate-500 shrink-0 font-medium">
           {{ formatRelativeTime(notification.timestamp) }}
         </span>
       </div>
 
-      <p class="text-xs text-slate-400 leading-snug wrap-break">
+      <p class="text-xs text-slate-400 leading-snug wrap-break-word">
         {{ notification.message }}
       </p>
 
@@ -111,8 +111,9 @@ const emit = defineEmits<{
     <button
       type="button"
       @click.stop="emit('delete', notification.id)"
-      class="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition cursor-pointer"
+      class="opacity-60 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition cursor-pointer shrink-0"
       title="Eliminar notificación"
+      aria-label="Eliminar notificación"
     >
       <i class="bi bi-trash3 text-xs"></i>
     </button>
