@@ -2,13 +2,15 @@
 
 > Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables y compresión binaria de avatares.
 
-**Demo en vivo:** [URL_AQUI]
+**Demo en vivo:** [https://kehubo.vercel.app/](https://kehubo.vercel.app/)
 
 ---
 
-## Capturas de Pantalla
+## Gameplay en Vivo
 
-[SCREENSHOT: Landing Page principal y Hero Section con temática gamer y portal de juego]
+<p align="center">
+  <img src="src/assets/gif/gameplay.gif" alt="Kehubo Gameplay en Vivo" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
 
 ---
 
@@ -27,6 +29,7 @@
 - **Firebase Authentication** (Autenticación segura vía Email/Password y Google OAuth)
 - **Cloud Firestore** (Base de datos NoSQL reactiva para estado de salas y sincronización en tiempo real)
 - **Firebase Storage** (Almacenamiento en la nube de avatares de usuario)
+- **Firebase Cloud Functions (2nd Gen)** (Generación server-side del mazo y verificación criptográfica de cartas)
 - **Node.js & Express** (Servidor backend dedicado para procesamiento y compresión de medios)
 - **Sharp** (Pipeline de manipulación y compresión de imágenes en memoria a formato AVIF)
 - **Helmet & Express Rate Limit** (Seguridad de cabeceras HTTP y protección contra abuso y DoS)
@@ -50,11 +53,16 @@
 
 ---
 
-## Capturas del Juego
+## Galería de la Interfaz
 
-[SCREENSHOT: Tablero de juego interactivo en modo contrarreloj con animaciones de cartas]
+<p align="center">
+  <img src="src/assets/screenshot/home.png" alt="Landing Page y Hero Section" width="100%" style="border-radius: 8px; margin-bottom: 12px;" />
+</p>
 
-[SCREENSHOT: Sala multijugador privada con Leaderboard en vivo y tarjetas de rivales]
+<p align="center">
+  <img src="src/assets/screenshot/rank.png" alt="Tabla de Ranking Global" width="49%" style="border-radius: 8px;" />
+  <img src="src/assets/screenshot/profile.png" alt="Perfil de Usuario" width="49%" style="border-radius: 8px;" />
+</p>
 
 ---
 
@@ -74,6 +82,7 @@ flowchart TD
         Auth[Firebase Auth - Email & Google OAuth]
         Firestore[(Cloud Firestore - Sincronización Tiempo Real)]
         Storage[(Firebase Storage - Media & Avatares)]
+        Functions[Cloud Functions 2nd Gen - Mazo Seguro & FlipCard]
     end
 
     subgraph NodeBackend["Backend Dedicado (Node.js + Express / Serverless)"]
@@ -86,6 +95,8 @@ flowchart TD
     Composables --> Pinia
     Composables <-->|Listeners OnSnapshot & Writes| Firestore
     Composables <-->|Tokens & Credentials| Auth
+    Composables <-->|Callable RPC: flipCard & createRoom| Functions
+    Functions -->|Lectura Mazo Secreto| Firestore
     Composables -->|Subida de Binarios Comprimidos| Storage
 
     UI -->|Multipart Upload Avatar| RateLimiter
@@ -97,6 +108,7 @@ flowchart TD
 ### Justificación de la Separación de Backends
 1. **Sincronización en Tiempo Real (Cloud Firestore)**: Gestiona el estado de salas multijugador, movimientos de cartas, amistades y notificaciones con latencia mínima mediante listeners basados en WebSockets/HTTP2.
 2. **Procesamiento Binario Dedicado (Express + Sharp)**: El procesamiento y compresión de imágenes requiere operaciones intensivas de CPU y memoria nativa (C/C++ vía Sharp/libvips) que no deben ejecutarse en el cliente para no degradar el framerate del juego, ni sobrecargar Firestore con archivos sin optimizar.
+3. **Lógica de Mazo en Servidor (Cloud Functions)**: Genera y custodia los valores reales del mazo en una subcolección privada inaccesible a clientes (`secret/deck`), revelando las cartas por RPC únicamente al voltearlas para impedir trampas mediante inspección de estado.
 
 ---
 
@@ -104,11 +116,13 @@ flowchart TD
 
 La seguridad del sistema está estructurada en múltiples capas defensivas:
 
+- **Mazo Protegido en Servidor (Anti-Cheat)**:
+  - Los valores reales de las cartas se generan en Cloud Functions y se almacenan en `rooms/{roomId}/secret/deck`, bloqueada por reglas de Firestore. El documento público de la sala únicamente expone cartas con `valor: null`, evitando la lectura anticipada en DevTools.
 - **Rate Limiting Estratificado**:
   - *Límite Global*: 100 peticiones por ventana de 15 minutos por IP para proteger endpoints generales.
   - *Límite de Compresión Estricto*: 20 conversiones por minuto por IP en `/api/compress-avatar` para mitigar ataques de Denegación de Servicio (DoS) por sobrecarga de CPU.
 - **Protección de Cabeceras y CORS con Allowlist**:
-  - Integración de **Helmet** con políticas `cross-origin` seguras.
+  - Integración de **Helmet** con políticas `cross-origin` y `same-origin-allow-popups` compatibles con Firebase Auth.
   - Middleware de **CORS restrictivo** que valida orígenes contra la variable de entorno `ALLOWED_ORIGIN`, impidiendo llamadas no autorizadas desde dominios externos.
 - **Reglas de Seguridad Granulares en Firestore (`firestore.rules`)**:
   - *Propiedad Estricta*: Los documentos de `users/{userId}` y `scores/{scoreId}` solo pueden ser creados, modificados o eliminados si `request.auth.uid == userId` o `resource.data.uid == request.auth.uid`.
@@ -116,16 +130,12 @@ La seguridad del sistema está estructurada en múltiples capas defensivas:
   - *Control de Salas*: La creación exige estructura válida (`code`, `status: 'waiting'`, `maxPlayers <= 4`) y la gestión de ciclo de vida queda reservada al `hostId`.
 - **Sistema Anti-Fuerza Bruta**:
   - Mecanismo de limitación que bloquea intentos sucesivos tras 5 fallos durante 60 segundos, validado mediante pruebas unitarias.
-- **Transparencia en Riesgo Residual (Modo P2P Serverless)**:
-  - En la arquitectura actual sin Cloud Functions intermediarias, el mazo sincronizado reside en el documento de sala de Firestore. El código documenta explícitamente este compromiso técnico y establece la ruta de evolución a Cloud Functions con Admin SDK para ocultamiento criptográfico de cartas del lado del servidor.
 
 ---
 
 ## Testing y Calidad
 
 El proyecto cuenta con una suite automatizada de pruebas con **Vitest** cubriendo los componentes críticos de la lógica de negocio y seguridad:
-
-[SCREENSHOT: Tabla de Ranking Global y Perfil de Usuario]
 
 ```bash
 ✓ tests/unit/useCountdown.test.js      # Temporizador, pausas e invocación de callbacks
