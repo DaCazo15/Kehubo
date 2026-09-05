@@ -23,7 +23,7 @@ const categories: {
     label: '24 Cartas',
     pairs: 12,
     tag: 'Cadete',
-    icon: 'bi-lightning-charge-fill',
+    icon: 'bi-trophy-fill',
     color: 'emerald'
   },
   {
@@ -31,7 +31,7 @@ const categories: {
     label: '32 Cartas',
     pairs: 16,
     tag: 'Guerrero',
-    icon: 'bi-fire',
+    icon: 'bi-trophy-fill',
     color: 'amber'
   },
   {
@@ -48,7 +48,7 @@ const categories: {
 <template>
   <div class="flex flex-col items-center space-y-3">
     <!-- Selector de Categorías -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 w-full max-w-2xl shadow-xl">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 w-full shadow-xl">
       <button
         v-for="cat in categories"
         :key="cat.value"
@@ -66,7 +66,7 @@ const categories: {
             class="text-sm"
           ></i>
           <span class="text-xs sm:text-sm font-black uppercase tracking-wider">
-            {{ cat.label }}
+            {{ cat.tag }}
           </span>
         </div>
 
@@ -78,16 +78,7 @@ const categories: {
               ? 'bg-slate-950/20 text-slate-950'
               : 'bg-slate-800 text-slate-400'"
           >
-            {{ cat.tag }} ({{ cat.pairs }} pares)
-          </span>
-
-          <!-- Contador de guerreros en la categoría -->
-          <span
-            v-if="categoryCounts && categoryCounts[cat.value] > 0"
-            class="font-mono font-bold"
-            :class="selectedCategory === cat.value ? 'text-slate-900' : 'text-slate-500'"
-          >
-            • {{ categoryCounts[cat.value] }} {{ categoryCounts[cat.value] === 1 ? 'jugador' : 'jugadores' }}
+            {{ cat.label }} ({{ cat.pairs }} pares)
           </span>
         </div>
       </button>

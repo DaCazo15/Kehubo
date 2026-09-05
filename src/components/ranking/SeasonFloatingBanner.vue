@@ -23,7 +23,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto">
+  <div class="w-full">
     <!-- Banner Desplegado -->
     <div
       v-if="!isMinimized"
@@ -36,18 +36,14 @@ onUnmounted(() => {
         
         <!-- Bloque Izquierdo: Información de la Temporada -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-linear-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
-            <i class="bi bi-calendar2-range-fill text-lg"></i>
+          <div class="w-10 h-10 flex items-center justify-center shrink-0">
+            <img src="../../assets/logo/logo.avif" alt="Logo" class="w-8 h-8">
           </div>
 
           <div class="space-y-0.5">
             <div class="flex items-center gap-2">
-              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15  text-emerald-400 text-[10px] font-black uppercase tracking-wider">
                 Temporada Activa
-              </span>
-              <span class="text-xs font-bold text-slate-400">
-                (Bimestral)
               </span>
             </div>
 

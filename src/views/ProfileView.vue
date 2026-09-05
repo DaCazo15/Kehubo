@@ -123,7 +123,7 @@ watch(user, () => {
             :class="activeTab === 'history' ? 'border-amber-400 text-amber-300' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <i class="bi bi-clock-history"></i>
-            <span>Historial de Temporada</span>
+            <span>Historial de Partidas</span>
           </button>
 
           <button
