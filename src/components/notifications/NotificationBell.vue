@@ -64,7 +64,9 @@ async function handleRejectFriend(notif: NotificationItem) {
 function handleNotificationClick(notif: NotificationItem) {
   markAsRead(notif.id)
   closeDropdown()
-  if (notif.senderUserId && notif.senderUserId !== 'anonimo') {
+  if (notif.type === 'room_invite' && ((notif as any).roomId || (notif as any).code)) {
+    router.push({ name: 'multiplayer-room', params: { roomId: (notif as any).roomId || (notif as any).code } })
+  } else if (notif.senderUserId && notif.senderUserId !== 'anonimo') {
     router.push({ name: 'perfil', params: { id: notif.senderUserId } })
   } else {
     router.push({ name: 'ranking' })

@@ -16,7 +16,8 @@ import type { Unsubscribe } from 'firebase/firestore'
 
 const route = useRoute()
 const router = useRouter()
-const roomId = ref<string>(route.params.roomId as string)
+const rawRoomParam = computed(() => (route.params.roomId as string)?.trim() || '')
+const roomId = ref<string>('')
 
 const {
   currentRoom,
@@ -223,15 +224,44 @@ function handlePlayAgain() {
   handleStartGame()
 }
 
-onMounted(async () => {
-  unsubRoom = listenToRoom(roomId.value)
-  unsubPlayers = listenToRoomPlayers(roomId.value)
+function setupListeners(targetRoomId: string) {
+  if (unsubRoom) unsubRoom()
+  if (unsubPlayers) unsubPlayers()
 
-  setTimeout(() => {
-    if (!currentRoom.value && !loading.value) {
-      joinRoom(roomId.value)
-    }
-  }, 300)
+  unsubRoom = listenToRoom(targetRoomId)
+  unsubPlayers = listenToRoomPlayers(targetRoomId)
+}
+
+async function initRoom() {
+  const param = rawRoomParam.value
+  if (!param) {
+    router.push({ name: 'multiplayer-lobby' })
+    return
+  }
+
+  // 1. Si ya estamos en la sala (ej. el host que la acaba de crear)
+  if (currentRoom.value && (currentRoom.value.id === param || currentRoom.value.code === param)) {
+    roomId.value = currentRoom.value.id
+    setupListeners(currentRoom.value.id)
+    return
+  }
+
+  // 2. Unirse y resolver el ID auténtico de la sala en Firestore
+  const res = await joinRoom(param)
+  if (res.success && res.roomId) {
+    roomId.value = res.roomId
+    setupListeners(res.roomId)
+  }
+}
+
+onMounted(() => {
+  initRoom()
+})
+
+watch(rawRoomParam, (newParam) => {
+  if (newParam && newParam !== roomId.value && newParam !== currentRoom.value?.code) {
+    initRoom()
+  }
 })
 
 onUnmounted(() => {
@@ -282,9 +312,27 @@ watch(
       @leave="handleLeaveRoom"
     />
 
+    <!-- Estado: Cargando Conexión a la Sala -->
+    <div v-if="loading && !currentRoom" class="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
+      <div class="w-12 h-12 border-3 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-sm font-black uppercase tracking-wider text-amber-300">Conectando a la sala...</p>
+    </div>
+
+    <!-- Estado: Error al Entrar a la Sala -->
+    <div v-else-if="error && !currentRoom" class="flex-1 flex flex-col items-center justify-center p-8 space-y-4 text-center max-w-md mx-auto">
+      <div class="w-16 h-16 rounded-full bg-red-950/60 border border-red-500/50 flex items-center justify-center text-2xl text-red-400">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <h3 class="text-lg font-black uppercase text-slate-100">No se pudo acceder a la sala</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">{{ error }}</p>
+      <BaseButton variant="gold" size="sm" rounded="xl" @click="router.push({ name: 'multiplayer-lobby' })">
+        Volver a Salas
+      </BaseButton>
+    </div>
+
     <!-- Estado: Sala de Espera (Lobby) -->
     <RoomWaitingLobby
-      v-if="currentRoom?.status === 'waiting'"
+      v-else-if="currentRoom?.status === 'waiting'"
       :current-room="currentRoom"
       :room-players="roomPlayers"
       :is-host="isHost"
@@ -295,7 +343,7 @@ watch(
     />
 
     <!-- Estado: Partida en Curso con Leaderboard Lateral en Vivo -->
-    <main v-else class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-4 flex flex-col lg:flex-row gap-4 items-start">
+    <main v-else-if="currentRoom" class="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 py-4 flex flex-col lg:flex-row gap-4 items-start">
       
       <!-- Panel Izquierdo: Tablero y Cartas de Juego -->
       <div class="flex-1 w-full flex flex-col items-center space-y-4">

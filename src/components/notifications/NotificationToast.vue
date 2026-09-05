@@ -9,10 +9,12 @@ const { activeToast, dismissToast, markAsRead } = useNotifications()
 function handleToastClick() {
   if (!activeToast.value) return
   markAsRead(activeToast.value.id)
-  const senderId = activeToast.value.senderUserId
+  const notif = activeToast.value
   dismissToast()
-  if (senderId && senderId !== 'anonimo') {
-    router.push({ name: 'perfil', params: { id: senderId } })
+  if (notif.type === 'room_invite' && ((notif as any).roomId || (notif as any).code)) {
+    router.push({ name: 'multiplayer-room', params: { roomId: (notif as any).roomId || (notif as any).code } })
+  } else if (notif.senderUserId && notif.senderUserId !== 'anonimo') {
+    router.push({ name: 'perfil', params: { id: notif.senderUserId } })
   } else {
     router.push({ name: 'ranking' })
   }
