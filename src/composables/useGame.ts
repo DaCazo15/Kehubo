@@ -7,6 +7,7 @@ import { useGameTurn } from './useGameTurn'
 import { useCountdown } from './useCountdown'
 import { useAuth } from './useAuth'
 import { useNotificationStore } from '../stores/notifications'
+import { getSeasonInfo, isScoreInCurrentSeason } from '../helpers/seasonUtils'
 
 export interface UseGameOptions {
   isCompetitive?: boolean
@@ -183,6 +184,7 @@ export function useGame(options: UseGameOptions = {}) {
       const photo = userAvatar.value || ''
 
       // 1. Registrar partida en colección 'scores'
+      const currentSeason = getSeasonInfo()
       const newDocRef = await addDoc(collection(db, 'scores'), {
         userId: uid,
         displayName: name,
@@ -193,26 +195,48 @@ export function useGame(options: UseGameOptions = {}) {
         seconds: matchSeconds,
         difficulty: cardCount.value,
         cartasVisibles: cartasVisiblesAlInicio.value,
+        seasonId: currentSeason.id,
+        seasonName: currentSeason.name,
+        seasonNumber: currentSeason.number,
         createdAt: serverTimestamp()
       })
 
-      // 2. Si el usuario está autenticado, verificar si superó su mejor tiempo
+      // 2. Si el usuario está autenticado, verificar si superó su mejor tiempo y mejor temporada
       if (user.value?.uid) {
         const userRef = doc(db, 'users', user.value.uid)
         const userSnap = await getDoc(userRef)
         
         if (userSnap.exists()) {
-          const currentBestSeconds = userSnap.data().bestSeconds || Infinity
+          const userData = userSnap.data()
+          const currentBestSeconds = userData.bestSeconds || Infinity
           if (matchSeconds < currentBestSeconds) {
             await updateDoc(userRef, {
               bestTime: matchTime,
-              bestSeconds: matchSeconds
+              bestSeconds: matchSeconds,
+              bestSeason: {
+                seasonName: currentSeason.name,
+                seasonId: currentSeason.id,
+                bestTime: matchTime,
+                bestSeconds: matchSeconds,
+                category: cardCount.value,
+                score: matchScore,
+                date: new Date()
+              }
             })
           }
         } else {
           await updateDoc(userRef, {
             bestTime: matchTime,
-            bestSeconds: matchSeconds
+            bestSeconds: matchSeconds,
+            bestSeason: {
+              seasonName: currentSeason.name,
+              seasonId: currentSeason.id,
+              bestTime: matchTime,
+              bestSeconds: matchSeconds,
+              category: cardCount.value,
+              score: matchScore,
+              date: new Date()
+            }
           }).catch(() => {})
         }
       }
@@ -235,11 +259,15 @@ export function useGame(options: UseGameOptions = {}) {
               return scoreA > scoreB
             }
 
-            // 1. Obtener la mejor marca previa del jugador actual (excluyendo este nuevo registro recién creado)
+            // Filtrar únicamente los documentos de la misma categoría de cartas (24, 32 o 40)
+            const currentDiff = cardCount.value || 24
+            const categoryDocs = rawDocs.filter(d => Number(d.difficulty || d.dificultad || d.cardCount || 24) === currentDiff)
+
+            // 1. Obtener la mejor marca previa del jugador actual en esta categoría (excluyendo este nuevo registro)
             let prevBestSeconds = 999999
             let prevBestScore = -1
             
-            for (const docItem of rawDocs) {
+            for (const docItem of categoryDocs) {
               if (docItem.userId === uid && docItem.id !== newDocRef.id) {
                 const sec = Number(docItem.seconds) || 999999
                 const s = Number(docItem.score) || 0
@@ -250,14 +278,14 @@ export function useGame(options: UseGameOptions = {}) {
               }
             }
 
-            // 2. Solo continuar si el jugador logró un nuevo récord personal (menor tiempo)
+            // 2. Solo continuar si el jugador logró un nuevo récord personal en esta categoría
             const hasNewPersonalBest = isBetter(matchSeconds, matchScore, prevBestSeconds, prevBestScore)
 
             if (hasNewPersonalBest) {
-              // 3. Mapear la mejor marca de cada rival único
+              // 3. Mapear la mejor marca de cada rival único en esta categoría
               const rivalBestMap = new Map<string, { userId: string, score: number, seconds: number, name: string }>()
 
-              for (const docItem of rawDocs) {
+              for (const docItem of categoryDocs) {
                 const rivalUid = docItem.userId
                 if (!rivalUid || rivalUid === 'anonimo' || rivalUid === uid) continue
 
@@ -275,8 +303,8 @@ export function useGame(options: UseGameOptions = {}) {
                 }
               }
 
-              // 4. Encontrar rivales legítimamente superados:
-              // - Antes de esta partida, el rival tenía un mejor tiempo que el jugador (o el jugador no tenía récord)
+              // 4. Encontrar rivales legítimamente superados en esta categoría:
+              // - Antes de esta partida, el rival tenía un mejor tiempo que el jugador en esta categoría
               // - Con esta nueva partida, el tiempo del jugador superó al rival
               const rivalsSurpassed: { userId: string, score: number, seconds: number }[] = []
 
@@ -305,7 +333,7 @@ export function useGame(options: UseGameOptions = {}) {
                   senderAvatar: photo,
                   senderCountry: userCountry.value || userProfile.value?.country || '',
                   type: 'record_beaten',
-                  message: `¡${name} ha superado tu récord con un tiempo de ${matchTime} y ${matchScore} pts!`,
+                  message: `¡${name} ha superado tu récord en la categoría de ${currentDiff} cartas con un tiempo de ${matchTime} y ${matchScore} pts!`,
                   score: matchScore,
                   time: matchTime,
                   seconds: matchSeconds,

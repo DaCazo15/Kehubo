@@ -6,6 +6,7 @@ import { useUserProfile } from '../composables/useUserProfile'
 import ProfileHeader from '../components/profile/ProfileHeader.vue'
 import ProfileStatsCard from '../components/profile/ProfileStatsCard.vue'
 import ProfileMatchHistory from '../components/profile/ProfileMatchHistory.vue'
+import ProfileBestSeason from '../components/profile/ProfileBestSeason.vue'
 import ProfileSettings from '../components/profile/ProfileSettings.vue'
 import FriendsList from '../components/profile/FriendsList.vue'
 
@@ -13,7 +14,7 @@ const route = useRoute()
 const { user, isAuthenticated, openAuthModal } = useAuth()
 
 const profileId = ref<string>((route.params.id as string) || user.value?.uid || '')
-const activeTab = ref<'history' | 'friends' | 'settings'>('history')
+const activeTab = ref<'history' | 'best-season' | 'friends'>('history')
 const isSettingsModalOpen = ref<boolean>(false)
 
 const {
@@ -28,6 +29,7 @@ const {
   matchHistory,
   bestMatches,
   bestTime,
+  bestSeason,
   totalScore,
   globalRank,
   friendshipState,
@@ -111,23 +113,33 @@ watch(user, () => {
         :country-name="displayCountry?.name"
       />
 
-      <!-- Pestañas de Contenido (Historial / Amigos) -->
+      <!-- Pestañas de Contenido (Historial / Mejor Temporada / Amigos) -->
       <div class="space-y-6">
-        <div class="flex border-b border-slate-800 gap-4">
+        <div class="flex border-b border-slate-800 gap-2 sm:gap-4 overflow-x-auto">
           <button
             type="button"
             @click="activeTab = 'history'"
-            class="pb-3 px-2 text-xs font-black uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2"
+            class="pb-3 px-2 text-xs font-black uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0"
             :class="activeTab === 'history' ? 'border-amber-400 text-amber-300' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <i class="bi bi-clock-history"></i>
-            <span>Historial y Récords</span>
+            <span>Historial de Temporada</span>
+          </button>
+
+          <button
+            type="button"
+            @click="activeTab = 'best-season'"
+            class="pb-3 px-2 text-xs font-black uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0"
+            :class="activeTab === 'best-season' ? 'border-amber-400 text-amber-300' : 'border-transparent text-slate-400 hover:text-slate-200'"
+          >
+            <i class="bi bi-trophy-fill text-amber-400"></i>
+            <span>Mejor Temporada</span>
           </button>
 
           <button
             type="button"
             @click="activeTab = 'friends'"
-            class="pb-3 px-2 text-xs font-black uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2"
+            class="pb-3 px-2 text-xs font-black uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 shrink-0"
             :class="activeTab === 'friends' ? 'border-pink-400 text-pink-300' : 'border-transparent text-slate-400 hover:text-slate-200'"
           >
             <i class="bi bi-people-fill"></i>
@@ -140,6 +152,14 @@ watch(user, () => {
           <ProfileMatchHistory 
             :match-history="matchHistory" 
             :best-matches="bestMatches" 
+          />
+        </div>
+
+        <div v-else-if="activeTab === 'best-season'">
+          <ProfileBestSeason
+            :best-season="bestSeason"
+            :is-own-profile="isOwnProfile"
+            :display-name="displayName"
           />
         </div>
 

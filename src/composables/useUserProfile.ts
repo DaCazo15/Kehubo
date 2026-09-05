@@ -1,10 +1,12 @@
 import { ref, computed, type Ref } from 'vue'
-import { doc, getDoc, collection, query, where, limit, getDocs } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, limit, getDocs, updateDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { useAuth } from './useAuth'
 import { useFriends } from './useFriends'
 import { getCountryByCode } from '../helpers/countries'
 import { formatAccountAge, formatSecondsToTime } from '../helpers/dateUtils'
+import { getSeasonInfo, isScoreInCurrentSeason } from '../helpers/seasonUtils'
+import type { BestSeasonData } from '../components/profile/ProfileBestSeason.vue'
 import type { UserProfile, ScoreRecord } from '../types'
 
 export function useUserProfile(profileId: Ref<string>) {
@@ -16,6 +18,7 @@ export function useUserProfile(profileId: Ref<string>) {
   const matchHistory = ref<ScoreRecord[]>([])
   const bestMatches = ref<ScoreRecord[]>([])
   const globalRank = ref<number | null>(null)
+  const bestSeason = ref<BestSeasonData | null>(null)
   const friendshipState = ref<string>('none')
   const pendingNotification = ref<any>(null)
   const friendActionLoading = ref<boolean>(false)
@@ -125,40 +128,48 @@ export function useUserProfile(profileId: Ref<string>) {
         return
       }
 
-      // 2. Obtener historial de partidas
+      // 2. Obtener historial de partidas de la temporada actual y marcas históricas
       const scoresRef = collection(db, 'scores')
       const scoresQuery = query(
         scoresRef, 
         where('userId', '==', profileId.value),
-        limit(20)
+        limit(50)
       )
       const scoresSnap = await getDocs(scoresQuery)
-      const scoresList = scoresSnap.docs.map(d => ({
+      const allUserScores = scoresSnap.docs.map(d => ({
         id: d.id,
         ...d.data()
       })) as ScoreRecord[]
 
+      const currentSeason = getSeasonInfo()
+
+      // Filtrar historial únicamente para la temporada actual
+      const currentSeasonScores = allUserScores.filter(s => isScoreInCurrentSeason(s, currentSeason))
+
       // Ordenar por fecha reciente
-      scoresList.sort((a, b) => {
+      currentSeasonScores.sort((a, b) => {
         const timeA = a.createdAt?.seconds || (a as any).timestamp?.seconds || 0
         const timeB = b.createdAt?.seconds || (b as any).timestamp?.seconds || 0
         return timeB - timeA
       })
-      matchHistory.value = scoresList
+      matchHistory.value = currentSeasonScores
 
-      // Mejores partidas (menor tiempo primero, y mayor puntaje como desempate)
-      const sortedBest = [...scoresList].sort((a, b) => {
+      // Mejores partidas de la temporada actual (menor tiempo primero)
+      const sortedBestCurrentSeason = [...currentSeasonScores].sort((a, b) => {
         const secA = a.seconds ?? 999999
         const secB = b.seconds ?? 999999
         if (secA !== secB) return secA - secB
         return (b.score || 0) - (a.score || 0)
       })
-      bestMatches.value = sortedBest.slice(0, 3)
+      bestMatches.value = sortedBestCurrentSeason.slice(0, 3)
 
-      // 3. Calcular posición en rankings
-      await computeRankings()
+      // 3. Calcular posición en rankings de la temporada actual
+      await computeRankings(currentSeason)
 
-      // 4. Verificar estado de amistad
+      // 4. Calcular o recuperar los datos de "Mejor Temporada"
+      computeBestSeasonData(allUserScores, currentSeason)
+
+      // 5. Verificar estado de amistad
       await checkStatus()
 
     } catch (err) {
@@ -168,13 +179,16 @@ export function useUserProfile(profileId: Ref<string>) {
     }
   }
 
-  async function computeRankings() {
+  async function computeRankings(currentSeason = getSeasonInfo()) {
     try {
       const allScoresRef = collection(db, 'scores')
       const allScoresSnap = await getDocs(query(allScoresRef, limit(200)))
-      const allScores = allScoresSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
+      const rawScores = allScoresSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ScoreRecord[]
 
-      allScores.sort((a, b) => {
+      // Filtrar rankings únicamente para la temporada activa
+      const currentSeasonScores = rawScores.filter(s => isScoreInCurrentSeason(s, currentSeason))
+
+      currentSeasonScores.sort((a, b) => {
         const secA = a.seconds ?? 999999
         const secB = b.seconds ?? 999999
         if (secA !== secB) return secA - secB
@@ -185,7 +199,7 @@ export function useUserProfile(profileId: Ref<string>) {
       const seenGlobal = new Set<string>()
       let rank = 1
       let foundGlobal = false
-      for (const s of allScores) {
+      for (const s of currentSeasonScores) {
         const uid = s.userId || s.displayName
         if (!seenGlobal.has(uid)) {
           seenGlobal.add(uid)
@@ -204,6 +218,44 @@ export function useUserProfile(profileId: Ref<string>) {
     }
   }
 
+  function computeBestSeasonData(allUserScores: ScoreRecord[], currentSeason = getSeasonInfo()) {
+    // Si el usuario ya tiene un registro de mejor temporada guardado en Firestore
+    const savedBestSeason = (profileData.value as any)?.bestSeason as BestSeasonData | undefined
+    
+    // Buscar la mejor partida histórica de todos los tiempos entre sus registros
+    const sortedAllTime = [...allUserScores].sort((a, b) => {
+      const secA = a.seconds ?? 999999
+      const secB = b.seconds ?? 999999
+      if (secA !== secB) return secA - secB
+      return (b.score || 0) - (a.score || 0)
+    })
+
+    const topHistorical = sortedAllTime[0]
+
+    if (topHistorical) {
+      const sec = topHistorical.seconds ?? 999999
+      const cat = Number(topHistorical.difficulty || (topHistorical as any).dificultad || (topHistorical as any).cardCount || 24)
+      const t = topHistorical.time || formatSecondsToTime(sec)
+      const rank = globalRank.value || savedBestSeason?.rank || 1
+      const seasonName = (topHistorical as any).seasonName || currentSeason.name
+
+      bestSeason.value = {
+        seasonName,
+        seasonId: (topHistorical as any).seasonId || currentSeason.id,
+        bestTime: t,
+        bestSeconds: sec < 999999 ? sec : null,
+        category: cat,
+        rank: rank,
+        score: topHistorical.score || 0,
+        date: topHistorical.createdAt || (topHistorical as any).timestamp || new Date()
+      }
+    } else if (savedBestSeason) {
+      bestSeason.value = savedBestSeason
+    } else {
+      bestSeason.value = null
+    }
+  }
+
   return {
     loading,
     profileData,
@@ -216,6 +268,7 @@ export function useUserProfile(profileId: Ref<string>) {
     matchHistory,
     bestMatches,
     bestTime,
+    bestSeason,
     totalScore,
     globalRank,
     friendshipState,
