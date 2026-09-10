@@ -4,14 +4,14 @@
 
 // Cargar todas las imágenes de animales dinámicamente usando import.meta.glob
 const animalModules = import.meta.glob<{ default: string }>(
-  '../assets/animales/*.png',
+  '../assets/animales/*.avif',
   { eager: true }
 )
 
 const urlToNameMap = new Map<string, string>()
 
 export const ANIMALES_IMAGENES: string[] = Object.entries(animalModules).map(([path, mod]) => {
-  const fileName = path.split('/').pop()?.replace(/\.png$/i, '') || ''
+  const fileName = path.split('/').pop()?.replace(/\.avif$/i, '') || ''
   const resolvedUrl = mod.default || (mod as unknown as string)
   if (resolvedUrl && fileName) {
     urlToNameMap.set(resolvedUrl, fileName)
@@ -19,7 +19,7 @@ export const ANIMALES_IMAGENES: string[] = Object.entries(animalModules).map(([p
   return resolvedUrl
 })
 
-export const ICO_ANIMALES = new URL('../assets/animales/ico/ico.png', import.meta.url).href
+export const ICO_ANIMALES = new URL('../assets/animales/ico/ico.avif', import.meta.url).href
 
 /**
  * Obtiene el nombre del animal a partir de la URL de su imagen (removiendo .png y hash)
