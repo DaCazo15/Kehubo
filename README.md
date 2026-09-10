@@ -112,50 +112,36 @@ src/
 
 ---
 
-## Arquitectura del Sistema
+## 🏛️ Arquitectura del Sistema
 
-El proyecto implementa una arquitectura híbrida desacoplada diseñada para optimizar tanto la sincronización de baja latencia como las tareas computacionalmente pesadas de procesamiento binario:
+<p align="center">
+  <img src="docs/architecture.svg" alt="Arquitectura del Sistema Kehubo" width="100%" style="border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.6);" />
+</p>
 
-```mermaid
-flowchart TD
-    subgraph Cliente["Frontend (Vue 3 + Vite SPA)"]
-        UI[Vistas / Componentes UI]
-        Composables[Composables: useGame, useMultiplayerRoom, useGameAudio, useMobileBoardResponsive]
-        Pinia[Stores: Auth & Notifications]
-    end
+<p align="center">
+  <a href="docs/architecture.html" target="_blank">
+    <img src="https://img.shields.io/badge/🔍_Explorar_Diagrama_Interactivo-Archify_Showcase-6366f1?style=for-the-badge&logo=html5&logoColor=white" alt="Explorar Diagrama Interactivo" />
+  </a>
+</p>
 
-    subgraph FirebaseServices["Servicios Firebase (Baja Latencia / Estado)"]
-        Auth[Firebase Auth - Email & Google OAuth]
-        Firestore[(Cloud Firestore - Sincronización Tiempo Real)]
-        Storage[(Firebase Storage - Media & Avatares)]
-        Functions[Cloud Functions 2nd Gen - Mazo Seguro & FlipCard]
-    end
+> 💡 **Visor Interactivo:** Puedes abrir directamente [`docs/architecture.html`](docs/architecture.html) en tu navegador para inspeccionar cada nodo en detalle, activar el **Modo Presentación**, alternar temas (**Dark/Light**), aplicar **Zoom / Pan táctil** o filtrar por rutas guiadas.
 
-    subgraph NodeBackend["Backend Dedicado (Node.js + Express / Serverless)"]
-        RateLimiter[Rate Limiters: Global & Sharp]
-        HelmetSec[Helmet & CORS Allowlist]
-        SharpEngine[Sharp Image Processor - AVIF 75%]
-    end
+### Desglose de Componentes Principales del Flujo
 
-    UI --> Composables
-    Composables --> Pinia
-    Composables <-->|Listeners OnSnapshot & Writes| Firestore
-    Composables <-->|Tokens & Credentials| Auth
-    Composables <-->|Callable RPC: flipCard & createRoom| Functions
-    Functions -->|Lectura Mazo Secreto| Firestore
-    Composables -->|Subida de Binarios Comprimidos| Storage
-
-    UI -->|Multipart Upload Avatar| RateLimiter
-    RateLimiter --> HelmetSec
-    HelmetSec --> SharpEngine
-    SharpEngine -->|Buffer AVIF Optimizado| UI
-```
-
-### Justificación de la Separación de Backends
-1. **Sincronización en Tiempo Real (Cloud Firestore)**: Gestiona el estado de salas multijugador, movimientos de cartas, amistades y notificaciones con latencia mínima mediante listeners basados en WebSockets/HTTP2.
-2. **Procesamiento Binario Dedicado (Express + Sharp)**: El procesamiento y compresión de imágenes requiere operaciones intensivas de CPU y memoria nativa (C/C++ vía Sharp/libvips) que no deben ejecutarse en el cliente para no degradar el framerate del juego, ni sobrecargar Firestore con archivos sin optimizar.
-3. **Lógica de Mazo en Servidor (Cloud Functions)**: Genera y custodia los valores reales del mazo en una subcolección privada inaccesible a clientes (`secret/deck`), revelando las cartas por RPC únicamente al voltearlas para impedir trampas mediante inspección de estado.
-4. **Principio "Build-time over Run-time" para Audio y Activos**: Las cartas y pistas de música se procesan y comprimen de antemano (formatos AVIF y MP3 de bitrate eficiente), reduciendo el tiempo de carga inicial y permitiendo reproducción nativa fluida en cualquier dispositivo móvil o de escritorio.
+- **Capa de Presentación y Cliente Web (Vue 3 SPA)**:
+  - **Vue 3 + Pinia + Tailwind CSS 4**: Experiencia reactiva ultra-rápida con orquestación modular de vistas y diseño glassmorphism.
+  - **Motor Responsive Móvil (`useMobileBoardResponsive`)**: Cálculo dinámico en tiempo real basado en el `visualViewport`, adaptando el tablero sin desbordamientos.
+  - **Motor de Audio Streaming (`useGameAudio`)**: Reproducción y rotación continua de pistas sin sobrecargar la memoria RAM ni bloquear el hilo principal.
+- **Distribución en el Edge (Vercel Global CDN)**:
+  - Enrutamiento estático de alto rendimiento y entrega de bundles optimizados a nivel mundial.
+- **Ecosistema Firebase Serverless (Baja Latencia & Tiempo Real)**:
+  - **Firebase Authentication**: Gestión de sesiones e identidad segura mediante Google OAuth y Email/Password con tokens JWT.
+  - **Cloud Firestore**: Base de datos NoSQL con listeners reactivos `onSnapshot` para sincronización instantánea de salas, marcadores y solicitudes de amistad.
+  - **Cloud Functions (2nd Gen — Anti-Cheat)**: Generación segura del mazo en `secret/deck` y RPC server-side `flipCard` para validar jugadas sin exponer valores en el cliente.
+  - **Firebase Storage**: Repositorio en la nube para persistencia de avatares optimizados.
+- **Backend Dedicado de Procesamiento Binario (Node.js & Express)**:
+  - **Gateway de Seguridad**: Protección perimetral con cabeceras seguras (**Helmet**), CORS restringido y **Rate Limiting** estratificado.
+  - **Motor de Compresión Sharp**: Pipeline nativo de transformación de imágenes a formato **AVIF** de alta fidelidad con más del 90% de reducción de peso.
 
 ---
 

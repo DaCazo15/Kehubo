@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Arquitectura del Sistema Kehubo",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "critical-gameplay-path",
+        "label": "Ruta Crítica de Juego",
+        "focus": ["users", "vercel_edge", "spa_client", "firestore_db", "cloud_functions"],
+        "note": "Flujo de baja latencia entre el cliente web y Cloud Firestore para sincronización de salas en vivo."
+      },
+      {
+        "id": "auth-and-storage",
+        "label": "Identidad y Multimedia",
+        "focus": ["users", "spa_client", "auth_service", "storage_service", "express_gateway", "sharp_engine"],
+        "note": "Gestión de autenticación, almacenamiento en la nube y compresión de medios mediante Sharp a formato AVIF."
+      },
+      {
+        "id": "audio-and-security",
+        "label": "Audio y Reglas Anti-Cheat",
+        "focus": ["spa_client", "audio_engine", "cloud_functions", "firestore_db"],
+        "note": "Motor de audio en streaming continuo y validación del mazo secreto en Cloud Functions 2nd Gen."
+      }
+    ]
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "Usuarios & Web", "sublabel": "Desktop / Móvil", "pos": [40, 260], "size": [130, 60] },
+    { "id": "vercel_edge", "type": "cloud", "label": "Vercel Edge", "sublabel": "CDN & Routing", "pos": [230, 260], "size": [130, 60] },
+    { "id": "auth_service", "type": "security", "label": "Firebase Auth", "sublabel": "OAuth & JWT", "pos": [430, 100], "size": [140, 60], "brand": "firebase" },
+    { "id": "spa_client", "type": "frontend", "label": "Cliente Vue 3", "sublabel": "Pinia & Tailwind 4", "pos": [430, 260], "size": [140, 60], "brand": "vue" },
+    { "id": "audio_engine", "type": "frontend", "label": "Motor Audio", "sublabel": "Streaming HTML5", "pos": [430, 420], "size": [140, 60], "tag": "Metadata Preload" },
+    { "id": "storage_service", "type": "cloud", "label": "Firebase Storage", "sublabel": "Media & Avatares", "pos": [650, 100], "size": [140, 60], "brand": "firebase" },
+    { "id": "firestore_db", "type": "database", "label": "Cloud Firestore", "sublabel": "Salas en Vivo", "pos": [650, 260], "size": [140, 60], "brand": "firebase" },
+    { "id": "cloud_functions", "type": "backend", "label": "Cloud Functions", "sublabel": "Mazo Anti-Cheat", "pos": [650, 420], "size": [140, 60], "tag": "2nd Gen", "brand": "firebase" },
+    { "id": "express_gateway", "type": "backend", "label": "Servidor Express", "sublabel": "Rate Limit & CORS", "pos": [870, 100], "size": [140, 60] },
+    { "id": "sharp_engine", "type": "backend", "label": "Motor Sharp", "sublabel": "Compresión AVIF", "pos": [870, 260], "size": [140, 60], "tag": "Reducción >90%" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Capa Cliente (SPA)", "wraps": ["spa_client", "audio_engine"] },
+    { "kind": "region", "label": "Ecosistema Firebase", "wraps": ["auth_service", "storage_service", "firestore_db", "cloud_functions"] },
+    { "kind": "security-group", "label": "Backend Procesamiento", "wraps": ["express_gateway", "sharp_engine"] }
+  ],
+  "connections": [
+    { "id": "users-to-edge", "from": "users", "to": "vercel_edge", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "edge-to-spa", "from": "vercel_edge", "to": "spa_client", "label": "Serve SPA" },
+    { "id": "spa-to-auth", "from": "spa_client", "to": "auth_service", "label": "Auth JWT", "variant": "security", "fromSide": "top", "toSide": "bottom", "labelDy": -40 },
+    { "id": "spa-to-audio", "from": "spa_client", "to": "audio_engine", "label": "Playback", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 30 },
+    { "id": "spa-to-firestore", "from": "spa_client", "to": "firestore_db", "label": "onSnapshot", "variant": "emphasis" },
+    { "id": "auth-to-storage", "from": "auth_service", "to": "storage_service", "label": "Security Rules" },
+    { "id": "cloud-to-db", "from": "cloud_functions", "to": "firestore_db", "label": "Secret Deck", "fromSide": "top", "toSide": "bottom", "labelDy": -30 },
+    { "id": "storage-to-gateway", "from": "storage_service", "to": "express_gateway", "label": "Optimize" },
+    { "id": "gateway-to-sharp", "from": "express_gateway", "to": "sharp_engine", "label": "Buffer AVIF", "fromSide": "bottom", "toSide": "top", "labelDy": 30 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend & Experiencia Táctica",
+      "items": [
+        "Vue 3 SPA reactivo con Tailwind CSS 4 y Pinia",
+        "Motor responsive adaptado dinámicamente al visualViewport móvil",
+        "Streaming nativo de audio HTML5 sin sobrecarga de memoria RAM"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Ecosistema Serverless & Tiempo Real",
+      "items": [
+        "Sincronización de salas en vivo con Cloud Firestore onSnapshot",
+        "Mazo secreto protegido con Cloud Functions RPC (Anti-Cheat)",
+        "Persistencia de identidad segura con Firebase Auth"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Procesamiento Binario & Seguridad",
+      "items": [
+        "Backend dedicado Express protegido con Rate Limiter y Helmet",
+        "Pipeline Sharp con conversión AVIF y reducción superior al 90%",
+        "Reglas granulares de Firestore para integridad de puntajes y partidas"
+      ]
+    }
+  ]
+}
