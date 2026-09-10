@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMultiplayerRoom } from '../composables/useMultiplayerRoom'
 import { useCronometro } from '../composables/useCronometo'
 import { useCountdown } from '../composables/useCountdown'
+import { useGameAudio } from '../composables/useGameAudio'
 import LiveLeaderboard from '../components/multiplayer/LiveLeaderboard.vue'
 import RoomPodiumModal from '../components/multiplayer/RoomPodiumModal.vue'
 import CountdownOverlay from '../components/game/CountdownOverlay.vue'
@@ -11,7 +12,7 @@ import RoomHeader from '../components/multiplayer/RoomHeader.vue'
 import RoomWaitingLobby from '../components/multiplayer/RoomWaitingLobby.vue'
 import Cartas from '../components/Cartas.vue'
 import Tablero from '../components/Tablero.vue'
-import type { Card } from '../types'
+import type { Card, CardContentType } from '../types'
 import type { Unsubscribe } from 'firebase/firestore'
 
 const route = useRoute()
@@ -41,7 +42,7 @@ const isHost = computed(() => currentRoom.value?.hostId === currentPlayer.value.
 // Estado del juego local
 const cartas = ref<Card[]>([])
 const CartasSeleccionadas = ref<Card[]>([])
-const CartasPares = ref<number[]>([])
+const CartasPares = ref<(number | string)[]>([])
 const tableroBloqueado = ref<boolean>(true)
 const localScore = ref<number>(0)
 const animatingScore = ref<string>('')
@@ -63,24 +64,33 @@ const {
   cancelCountdown 
 } = useCountdown()
 
+const {
+  playRandomTrack,
+  pauseAudio,
+  resumeAudio,
+  stopAudio
+} = useGameAudio({ initialVolume: 0.35, loop: true })
+
 const cardCount = computed(() => currentRoom.value?.config?.cardCount || 24)
 const cartasVisiblesAlInicio = computed(() => currentRoom.value?.config?.cartasVisibles || false)
+const cardContentType = computed<CardContentType>(() => currentRoom.value?.config?.cardContentType || 'numeros')
 const totalPares = computed(() => Math.floor(cardCount.value / 2))
 
 const gridColsClass = computed(() => {
   if (cardCount.value === 40) {
-    return 'grid-cols-5 sm:grid-cols-8 md:grid-cols-10 grid-rows-8 sm:grid-rows-5 md:grid-rows-4'
+    return 'grid-cols-5 sm:grid-cols-8 md:grid-cols-10 grid-rows-8 sm:grid-rows-5 md:grid-rows-4 aspect-[15/32] sm:aspect-[6/5] md:aspect-[15/8]'
   }
   if (cardCount.value === 32) {
-    return 'grid-cols-4 sm:grid-cols-8 grid-rows-8 sm:grid-rows-4'
+    return 'grid-cols-4 sm:grid-cols-8 grid-rows-8 sm:grid-rows-4 aspect-[3/8] sm:aspect-[3/2]'
   }
-  return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4'
+  return 'grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4 aspect-[1/2] sm:aspect-[9/8]'
 })
 
 let unsubRoom: Unsubscribe | (() => void) | null = null
 let unsubPlayers: Unsubscribe | (() => void) | null = null
 
 function startMultiplayerMatch() {
+  playRandomTrack()
   const syncDeck = currentRoom.value?.config?.deck || []
   
   cartas.value = syncDeck.map(c => ({
@@ -200,11 +210,12 @@ async function verificar(cardOrId: Card | number) {
   }
 }
 
-function handleUpdateConfig(config: { cardCount?: number; cartasVisibles?: boolean }) {
+function handleUpdateConfig(config: { cardCount?: number; cartasVisibles?: boolean; cardContentType?: CardContentType }) {
   if (!isHost.value) return
   updateRoomConfig(roomId.value, {
     cardCount: config.cardCount ?? cardCount.value,
-    cartasVisibles: config.cartasVisibles ?? cartasVisiblesAlInicio.value
+    cartasVisibles: config.cartasVisibles ?? cartasVisiblesAlInicio.value,
+    cardContentType: config.cardContentType ?? cardContentType.value
   })
 }
 
@@ -214,6 +225,7 @@ async function handleStartGame() {
 }
 
 async function handleLeaveRoom() {
+  stopAudio()
   await leaveRoom(roomId.value)
   router.push({ name: 'multiplayer-lobby' })
 }
@@ -265,6 +277,7 @@ watch(rawRoomParam, (newParam) => {
 })
 
 onUnmounted(() => {
+  stopAudio()
   if (unsubRoom) unsubRoom()
   if (unsubPlayers) unsubPlayers()
   cancelCountdown()
@@ -288,10 +301,12 @@ watch(
         startMultiplayerMatch()
       }
     } else if (newStatus === 'finished') {
+      stopAudio()
       detenerCronometro()
       tableroBloqueado.value = true
       isPodiumOpen.value = true
     } else if (newStatus === 'waiting') {
+      stopAudio()
       isPodiumOpen.value = false
       detenerCronometro()
       resetCronometro()
@@ -338,6 +353,7 @@ watch(
       :is-host="isHost"
       :card-count="cardCount"
       :cartas-visibles="cartasVisiblesAlInicio"
+      :card-content-type="cardContentType"
       @update-config="handleUpdateConfig"
       @start-game="handleStartGame"
     />

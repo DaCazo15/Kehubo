@@ -7,12 +7,15 @@ import { useGameTurn } from './useGameTurn'
 import { useCountdown } from './useCountdown'
 import { useAuth } from './useAuth'
 import { useNotificationStore } from '../stores/notifications'
+import { useGameAudio } from './useGameAudio'
+import type { CardContentType } from '../types'
 import { getSeasonInfo, isScoreInCurrentSeason } from '../helpers/seasonUtils'
 
 export interface UseGameOptions {
   isCompetitive?: boolean
   defaultCardCount?: number
   defaultCartasVisibles?: boolean
+  defaultContentType?: CardContentType
   autoStart?: boolean
 }
 
@@ -21,18 +24,21 @@ export function useGame(options: UseGameOptions = {}) {
     isCompetitive = false,
     defaultCardCount = 24,
     defaultCartasVisibles = false,
+    defaultContentType = 'numeros',
     autoStart = false
   } = options
 
   // Opciones de partida
   const cardCount = ref<number>(defaultCardCount)
   const cartasVisiblesAlInicio = ref<boolean>(defaultCartasVisibles)
+  const cardContentType = ref<CardContentType>(defaultContentType)
 
   // Estados de flujo del juego
   const isConfiguring = ref<boolean>(!autoStart)
   const isGameOver = ref<boolean>(false)
   const isSavingScore = ref<boolean>(false)
   const scoreSaved = ref<boolean>(false)
+  const isGameStarted = ref<boolean>(false)
 
   // Autenticación & Notificaciones
   const { user, userProfile, userDisplayName, userAvatar, userCountry } = useAuth()
@@ -50,9 +56,13 @@ export function useGame(options: UseGameOptions = {}) {
     tiempo,
     tiempoFormateado, 
     iniciarCronometro, 
+    pausarCronometro,
+    reanudarCronometro,
     resetCronometro, 
     detenerCronometro 
   } = useCronometro()
+
+  const isGamePaused = ref<boolean>(false)
 
   const puntajeBase = ref<number>(0)
   const animatingScore = ref<string>('')
@@ -100,6 +110,19 @@ export function useGame(options: UseGameOptions = {}) {
     cancelCountdown 
   } = useCountdown()
 
+  // Gestor de audio de fondo nativo (streaming ligero con preload metadata)
+  const {
+    isPlaying: isAudioPlaying,
+    isMuted: isAudioMuted,
+    currentTrackNumber,
+    playRandomTrack,
+    pauseAudio,
+    resumeAudio,
+    stopAudio,
+    toggleMute,
+    setVolume
+  } = useGameAudio({ initialVolume: 0.35, loop: true })
+
   // Cálculos reactivos
   const totalPares = computed(() => Math.floor(cardCount.value / 2))
   const puntaje = computed(() => Math.max(0, puntajeBase.value))
@@ -125,10 +148,21 @@ export function useGame(options: UseGameOptions = {}) {
   /**
    * Prepara el tablero e inicia la cuenta regresiva antes de arrancar la partida
    */
-  const iniciarPreparacion = (config: { cardCount?: number; cartasVisibles?: boolean } = {}) => {
+  const iniciarPreparacion = (config: { 
+    cardCount?: number
+    cartasVisibles?: boolean
+    cardContentType?: CardContentType 
+  } = {}) => {
     if (config.cardCount) cardCount.value = config.cardCount
     if (config.cartasVisibles !== undefined) cartasVisiblesAlInicio.value = config.cartasVisibles
+    if (config.cardContentType) cardContentType.value = config.cardContentType
 
+    // Si no son 24 cartas y se intentó usar letras, forzar a números
+    if (cardCount.value !== 24 && cardContentType.value === 'letras') {
+      cardContentType.value = 'numeros'
+    }
+
+    isGameStarted.value = true
     isConfiguring.value = false
     isGameOver.value = false
     scoreSaved.value = false
@@ -143,8 +177,11 @@ export function useGame(options: UseGameOptions = {}) {
     tableroBloqueado.value = true
 
     // Inicializar cartas según configuración elegida
-    inicializarCartas(cardCount.value, cartasVisiblesAlInicio.value)
+    inicializarCartas(cardCount.value, cartasVisiblesAlInicio.value, cardContentType.value)
     barajar()
+
+    // Reproducir una pista aleatoria para la nueva partida
+    playRandomTrack()
 
     // Iniciar cuenta regresiva (5 segundos de preparación)
     startCountdown(5, () => {
@@ -356,11 +393,43 @@ export function useGame(options: UseGameOptions = {}) {
   }
 
   /**
+   * Pausa la partida en curso (cuenta regresiva o tiempo de juego)
+   */
+  const pauseGame = () => {
+    isGamePaused.value = true
+    if (isCounting.value) {
+      pauseCountdown()
+    } else {
+      pausarCronometro()
+    }
+    tableroBloqueado.value = true
+    pauseAudio()
+  }
+
+  /**
+   * Reanuda la partida pausada
+   */
+  const resumeGame = () => {
+    isGamePaused.value = false
+    if (isCounting.value) {
+      resumeCountdown()
+    } else if (!isGameOver.value) {
+      reanudarCronometro()
+      tableroBloqueado.value = false
+    }
+    resumeAudio()
+  }
+
+  /**
    * Detiene manualmente la partida
    */
   const detener = () => {
     detenerCronometro()
+    cancelCountdown()
+    stopAudio()
     tableroBloqueado.value = true
+    isGamePaused.value = false
+    isGameStarted.value = false
   }
 
   /**
@@ -369,6 +438,9 @@ export function useGame(options: UseGameOptions = {}) {
   const resetGame = (abrirSelector = false) => {
     cancelCountdown()
     detenerCronometro()
+    stopAudio()
+    isGamePaused.value = false
+    isGameStarted.value = false
     
     if (abrirSelector || isCompetitive) {
       isConfiguring.value = true
@@ -381,14 +453,21 @@ export function useGame(options: UseGameOptions = {}) {
     }
   }
 
+  const isGameActive = computed(() => {
+    if (isGameOver.value || isConfiguring.value || !isGameStarted.value) return false
+    return isCounting.value || (!tableroBloqueado.value || tiempo.value > 0 || isGamePaused.value)
+  })
+
   // Detectar fin de partida cuando se completan todos los pares
   watch(
     () => CartasPares.value.length,
     async (nuevoTotal) => {
       if (nuevoTotal > 0 && nuevoTotal === totalPares.value) {
         detenerCronometro()
+        stopAudio()
         tableroBloqueado.value = true
         isGameOver.value = true
+        isGameStarted.value = false
 
         if (isCompetitive) {
           await guardarResultadoEnRanking()
@@ -407,6 +486,7 @@ export function useGame(options: UseGameOptions = {}) {
     // Configuración
     cardCount,
     cartasVisiblesAlInicio,
+    cardContentType,
     isConfiguring,
     isCompetitive,
     
@@ -424,6 +504,20 @@ export function useGame(options: UseGameOptions = {}) {
     isGameOver,
     isSavingScore,
     scoreSaved,
+    isGamePaused,
+    isGameStarted,
+    isGameActive,
+
+    // Audio de fondo
+    isAudioPlaying,
+    isAudioMuted,
+    currentTrackNumber,
+    playRandomTrack,
+    pauseAudio,
+    resumeAudio,
+    stopAudio,
+    toggleMute,
+    setVolume,
 
     // Cuenta regresiva
     countdown,
@@ -436,6 +530,8 @@ export function useGame(options: UseGameOptions = {}) {
     verificar,
     iniciarPreparacion,
     resetGame,
-    detener
+    detener,
+    pauseGame,
+    resumeGame
   }
 }
