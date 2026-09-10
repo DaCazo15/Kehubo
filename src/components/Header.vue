@@ -9,9 +9,9 @@ defineProps<{
 </script>
 
 <template>
-  <header class="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 shadow-md border-b border-slate-700/80 font-['Montserrat']">
+  <header class="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 shadow-md border-b border-slate-700/80 font-['Montserrat'] shrink-0 z-10">
     <div
-      class="mx-auto max-w-6xl py-2 sm:py-3 px-3 sm:px-6 flex justify-between items-center"
+      class="mx-auto max-w-6xl py-1.5 sm:py-2 px-3 sm:px-6 flex justify-between items-center"
     >
       <div class="flex items-center gap-2 sm:gap-4">
         <RouterLink :to="{ name: 'home' }" v-if="volver" class="flex items-center gap-1.5 sm:gap-2 group" title="Volver al Inicio">

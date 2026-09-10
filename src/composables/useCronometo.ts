@@ -19,6 +19,19 @@ export function useCronometro() {
     }
   }
 
+  const pausarCronometro = () => {
+    detenerCronometro()
+  }
+
+  const reanudarCronometro = () => {
+    if (!stopCronometro) {
+      const intervalo = setInterval(() => {
+        tiempo.value++
+      }, 1000)
+      stopCronometro = () => clearInterval(intervalo)
+    }
+  }
+
   const resetCronometro = () => {
     detenerCronometro()
     tiempo.value = 0
@@ -43,6 +56,8 @@ export function useCronometro() {
     tiempoFormateado,
     detenerCronometro,
     iniciarCronometro,
+    pausarCronometro,
+    reanudarCronometro,
     resetCronometro
   }
 }

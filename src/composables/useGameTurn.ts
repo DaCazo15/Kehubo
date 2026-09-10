@@ -9,15 +9,16 @@ export function useGameTurn(numeros: Ref<Card[]>, options: GameTurnOptions = {})
   const { onMatch } = options
   const seleccionadas = ref<Card[]>([])
 
-  const tableroBloqueado = ref<boolean>(false)
+  const tableroBloqueado = ref<boolean>(true)
 
-  const CartasPares = ref<number[]>([])
+  const CartasPares = ref<(number | string)[]>([])
 
   const verificar = (cardId: number) => {
     const carta = numeros.value.find((c) => c.id === cardId)
 
     if (
       !carta ||
+      carta.isDummy ||
       tableroBloqueado.value ||
       carta.revelada ||
       carta.encontrada
