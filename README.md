@@ -4,7 +4,7 @@
 
 # Kehubo — Plataforma de Juego de Memoria Táctica en Tiempo Real
 
-> Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables, arquitectura modular y compresión binaria de avatares.
+> Videojuego web de emparejamiento táctico de cartas con partidas multijugador en tiempo real por salas privadas, leaderboard dinámico, sistema de ranking global, perfiles personalizables, arquitectura modular, compresión binaria de medios (AVIF) y motor de audio en streaming.
 
 **Demo en vivo:** [https://kehubo.vercel.app/](https://kehubo.vercel.app/)
 
@@ -22,13 +22,13 @@
 
 ### Frontend
 - **Vue 3** (Composition API, `<script setup>`, Reactividad Nativa)
-- **Vite** (Bundler y entorno de desarrollo de alto rendimiento)
+- **Vite** (Bundler y entorno de desarrollo de ultra-alto rendimiento)
 - **TypeScript** (Tipado estricto en tipos de dominio, componentes y composables)
-- **Pinia** (Gestión de estado global centralizado para autenticación y notificaciones)
+- **Pinia** (Gestión de estado global centralizado para autenticación, usuario y notificaciones)
 - **Vue Router** (Enrutamiento SPA con rutas dinámicas nombradas y guardias de navegación)
 - **Tailwind CSS 4** (Diseño moderno, dark mode, glassmorphism y micro-animaciones)
 - **Anime.js & GSAP** (Animaciones tácticas de cartas, conteo regresivo y efectos de portal)
-- **Bootstrap Icons** (Iconografía optimizada)
+- **Bootstrap Icons** (Iconografía vectorial optimizada)
 
 ### Backend, Base de Datos y Servicios
 - **Firebase Authentication** (Autenticación segura vía Email/Password y Google OAuth)
@@ -51,12 +51,15 @@
 
 - **Arquitectura de Componentes Modular**: Estructura desacoplada con orquestadores limpios y subcomponentes atómicos (`navbar`, `hero`, `features`, `footer`, `profile`, `multiplayer`, `ranking`) respaldados por un Design System unificado (`BaseButton`, `BaseModal`).
 - **Autenticación y Perfiles**: Registro e inicio de sesión con validación en dos columnas, persistencia de sesión, selección de género y nacionalidad con banderas dinámicas.
-- **Optimización de Avatares a AVIF**: Procesamiento binario en servidor mediante Sharp, recortando y convirtiendo imágenes a formato AVIF con reducciones superiores al 80% en tamaño de carga.
-- **Modo Contrarreloj (Un Jugador)**: 4 dificultades tácticas (16, 24, 32 y 40 cartas), cálculo de puntuación dinámica, cartas viradas opcionales y control de temporizador.
+- **Optimización de Activos a AVIF con Sharp**: Procesamiento binario en servidor para avatares y pre-optimización en build-time de 40 cartas ilustradas de animales a formato `.avif` de ultra-bajo peso (reducción superior al 94%, bajando de ~200 KB a sólo 5–14 KB por activo).
+- **Mazos Temáticos Personalizables**: Selección de tipo de mazo entre **Números**, **Letras** y **Animales Ilustrados**, configurable tanto en partidas individuales/rápidas como en salas multijugador sincronizadas en tiempo real.
+- **Motor de Audio Ligero y Streaming**: Sistema de música ambiental aleatoria seleccionada entre 4 pistas con streaming nativo HTML5 (`preload="metadata"`), cero saturación de RAM/CPU, inicio sincronizado al finalizar el conteo regresivo de 5s y rotación continua automática al terminar cada pista.
+- **Modo Contrarreloj (Un Jugador) & Modo Rápido**: 4 dificultades tácticas (16, 24, 32 y 40 cartas), cálculo de puntuación dinámica, cartas viradas opcionales y modal de pausa táctica.
+- **Motor Responsive Móvil con Adaptación a `visualViewport`**: Cálculo dinámico de altura neta que descuenta los contenedores superiores (logo y puntaje) y divide el espacio restante entre el número de filas (6 u 8 filas), garantizando cartas simétricas 3:4 sin desbordes.
 - **Multijugador en Tiempo Real por Salas Privadas**: Creación de salas de hasta 4 jugadores con código alfanumérico único (`KH-XXXX`) o enlace directo.
 - **Leaderboard Dinámico en Vivo**: Barra lateral interactiva que reordena automáticamente a los jugadores en tiempo real de mayor a menor puntuación y pares encontrados durante la partida.
+- **Sistema de Temporadas y Clasificación Global**: Banners flotantes con conteo regresivo de temporada y tabla de ranking competitivo persistida en Firestore.
 - **Sistema Social y Notificaciones**: Envío y recepción de solicitudes de amistad en tiempo real con aceptación/rechazo y listas de amigos sincronizadas.
-- **Ranking Global**: Tabla de clasificación con filtrado y persistencia en Firestore.
 
 ---
 
@@ -73,26 +76,38 @@
 
 ---
 
-## Estructura de Componentes y Modularización
+## Estructura del Proyecto y Modularización
 
 El proyecto sigue una arquitectura desacoplada donde cada vista principal o sección compleja actúa como un **Orquestador**, delegando responsabilidades a subcomponentes especializados:
 
 ```
 src/
+├── assets/
+│   ├── animales/           # Colección de 40 cartas de animales optimizadas en formato .avif
+│   ├── logo/               # Identidad visual e isologos
+│   ├── sounds/             # Pistas de música ambiental (1.mp3, 2.mp3, 3.mp3, 4.mp3)
+│   └── screenshot/         # Capturas de la interfaz y demostración
 ├── components/
 │   ├── common/             # Componentes base del Design System (BaseButton, BaseModal)
-│   ├── landing/            # Landing page modular
-│   │   ├── navbar/         # Logo, DesktopNav, UserActions, MobileToggle, MobileMenu, navData
-│   │   ├── hero/           # HeroContent, HeroStats, HeroCardPortal
-│   │   ├── features/       # FeatureCard, featuresData
-│   │   └── footer/         # FooterBrand, FooterNav, FooterContact, footerData
+│   ├── game/               # CountdownOverlay, GameConfigModal, GamePauseModal, etc.
+│   ├── landing/            # Landing page modular (navbar, hero, features, footer)
 │   ├── multiplayer/        # LiveLeaderboard, RoomHeader, RoomPodiumModal, RoomWaitingLobby, etc.
 │   ├── notifications/      # NotificationBell, NotificationItemCard, NotificationToast
 │   ├── profile/            # ProfileHeader, ProfileStatsCard, ProfileMatchHistory, FriendsList, etc.
-│   └── ranking/            # RankingPodium, RankingTable, RankingTypeFilter
-├── composables/            # Lógica reactiva reutilizable (useGame, useMultiplayerRoom, useAuth, etc.)
+│   └── ranking/            # RankingPodium, RankingTable, SeasonFloatingBanner
+├── composables/            # Lógica reactiva reutilizable
+│   ├── useCardDeck.ts               # Generación y barajado de mazos (números, letras, animales)
+│   ├── useCountdown.ts              # Temporizador de preparación de 5 segundos
+│   ├── useCronometo.ts              # Cronómetro de partida con pausas
+│   ├── useDynamicBoardHeight.ts     # Orquestación de dimensiones de tablero
+│   ├── useGame.ts                   # Lógica central del modo un jugador y modo rápido
+│   ├── useGameAudio.ts              # Motor de audio con streaming y reproducción continua
+│   ├── useMobileBoardResponsive.ts  # Adaptación responsive pixel-perfect para móviles
+│   ├── useMultiplayerRoom.ts        # Sincronización en tiempo real de salas multijugador
+│   └── useSecurity.ts               # Protección contra fuerza bruta
+├── helpers/                # Utilidades puras (animales.ts, sounds.ts, imageCompressor.ts)
 ├── stores/                 # Stores de Pinia (auth, notifications)
-└── views/                  # Vistas de Vue Router (Home, Game, Profile, Ranking, Multiplayer)
+└── views/                  # Vistas SPA de Vue Router (Home, Game, Profile, Ranking, Multiplayer)
 ```
 
 ---
@@ -105,7 +120,7 @@ El proyecto implementa una arquitectura híbrida desacoplada diseñada para opti
 flowchart TD
     subgraph Cliente["Frontend (Vue 3 + Vite SPA)"]
         UI[Vistas / Componentes UI]
-        Composables[Composables: useGame, useMultiplayerRoom, useAuth]
+        Composables[Composables: useGame, useMultiplayerRoom, useGameAudio, useMobileBoardResponsive]
         Pinia[Stores: Auth & Notifications]
     end
 
@@ -140,6 +155,7 @@ flowchart TD
 1. **Sincronización en Tiempo Real (Cloud Firestore)**: Gestiona el estado de salas multijugador, movimientos de cartas, amistades y notificaciones con latencia mínima mediante listeners basados en WebSockets/HTTP2.
 2. **Procesamiento Binario Dedicado (Express + Sharp)**: El procesamiento y compresión de imágenes requiere operaciones intensivas de CPU y memoria nativa (C/C++ vía Sharp/libvips) que no deben ejecutarse en el cliente para no degradar el framerate del juego, ni sobrecargar Firestore con archivos sin optimizar.
 3. **Lógica de Mazo en Servidor (Cloud Functions)**: Genera y custodia los valores reales del mazo en una subcolección privada inaccesible a clientes (`secret/deck`), revelando las cartas por RPC únicamente al voltearlas para impedir trampas mediante inspección de estado.
+4. **Principio "Build-time over Run-time" para Audio y Activos**: Las cartas y pistas de música se procesan y comprimen de antemano (formatos AVIF y MP3 de bitrate eficiente), reduciendo el tiempo de carga inicial y permitiendo reproducción nativa fluida en cualquier dispositivo móvil o de escritorio.
 
 ---
 
@@ -170,7 +186,7 @@ El proyecto cuenta con una suite automatizada de pruebas con **Vitest** cubriend
 
 ```bash
 ✓ tests/unit/useCountdown.test.js      # Temporizador, pausas e invocación de callbacks
-✓ tests/unit/useCardDeck.test.js       # Generación de mazo, Fisher-Yates shuffle y pares
+✓ tests/unit/useCardDeck.test.js       # Generación de mazo, Fisher-Yates shuffle y tipos de carta
 ✓ tests/binary/imageCompression.test.js # Pipelines de compresión binaria de imagen
 ✓ tests/unit/security.test.js          # Guard anti-fuerza bruta y sanitización de inputs
 ✓ tests/unit/useGameTurn.test.js       # Lógica de emparejamiento, turnos y puntuación
