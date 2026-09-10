@@ -12,8 +12,8 @@ defineProps<{
 </script>
 
 <template>
-  <div class="bg-slate-900/90 border-b border-slate-800 py-2 sm:py-3 px-3 sm:px-6 shadow-xl font-['Montserrat'] shrink-0">
-    <div class="mx-auto max-w-6xl flex justify-between items-center gap-2 sm:gap-4">
+  <div class="bg-slate-900/95 border-b border-slate-800 py-1.5 sm:py-2 px-3 sm:px-6 shadow-md font-['Montserrat'] shrink-0 z-10">
+    <div class="mx-auto max-w-full flex justify-between items-center gap-2 sm:gap-4">
       
       <!-- Puntos y Pares -->
       <div class="flex items-center gap-2 sm:gap-6">

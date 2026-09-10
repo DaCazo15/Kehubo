@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import Header from '../components/Header.vue'
 import Tablero from '../components/Tablero.vue'
 import Cartas from '../components/Cartas.vue'
 import CountdownOverlay from '../components/game/CountdownOverlay.vue'
 import VictoryModal from '../components/game/VictoryModal.vue'
+import GamePauseModal from '../components/game/GamePauseModal.vue'
 import { useGame } from '../composables/useGame'
+import { useDynamicBoardHeight } from '../composables/useDynamicBoardHeight'
+
+const router = useRouter()
+const headerRef = ref<any>(null)
+const tableroRef = ref<any>(null)
 
 const {
   // Configuración
@@ -21,6 +29,7 @@ const {
   CartasPares,
   tableroBloqueado,
   isGameOver,
+  isGameActive,
 
   // Countdown
   countdown,
@@ -32,26 +41,92 @@ const {
   // Acciones
   verificar,
   iniciarPreparacion,
-  resetGame
+  resetGame,
+  detener,
+  pauseGame,
+  resumeGame
 } = useGame({
   isCompetitive: false, // Partida Rápida: No se guarda en Firestore
   defaultCardCount: 24, // 24 Cartas fijas
   defaultCartasVisibles: false, // Cartas ocultas al inicio
   autoStart: true // Inicia directamente con la cuenta regresiva
 })
+
+// Control de altura dinámica de cartas por cálculo exacto del viewport
+const {
+  cardHeight,
+  cardWidth,
+  rowCount,
+  colCount
+} = useDynamicBoardHeight({
+  cardCount,
+  headerRef,
+  tableroRef
+})
+
+// Control de Modal de Pausa y confirmación de abandono
+const showPauseModal = ref<boolean>(false)
+const pendingLeaveTarget = ref<any>(null)
+let allowLeave = false
+
+onBeforeRouteLeave((to) => {
+  if (allowLeave || !isGameActive.value || isGameOver.value) {
+    return true
+  }
+
+  pauseGame()
+  showPauseModal.value = true
+  pendingLeaveTarget.value = to
+  return false
+})
+
+function onResumeGame() {
+  showPauseModal.value = false
+  pendingLeaveTarget.value = null
+  resumeGame()
+}
+
+function onConfirmExit() {
+  showPauseModal.value = false
+  allowLeave = true
+  detener()
+  if (pendingLeaveTarget.value) {
+    router.push(pendingLeaveTarget.value)
+  } else {
+    router.push({ name: 'home' })
+  }
+}
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isGameActive.value && !isGameOver.value && !allowLeave) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
 </script>
 
 <template>
-  <div class="h-screen max-h-screen bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none overflow-hidden">
+  <div class="h-dvh max-h-dvh bg-[#070a12] text-slate-100 flex flex-col font-['Montserrat'] select-none overflow-hidden">
     
     <!-- Cabecera del Juego con botón Reiniciar y Salir -->
     <Header 
+      ref="headerRef"
       :resetGame="() => resetGame(false)" 
       :volver="true"
     />
 
     <!-- Tablero con Puntos, Pares y Tiempo -->
     <Tablero 
+      ref="tableroRef"
       :tiempo="tiempoFormateado" 
       :puntaje="puntaje" 
       :totalPares="totalPares"
@@ -62,14 +137,24 @@ const {
       :animatingTime="animatingTime"
     />
 
-    <!-- Contenedor del Tablero de Cartas (24 cartas: grid 6x4 o 4x6 en movil) -->
-    <main class="flex-1 w-full max-w-5xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-center min-h-0 overflow-hidden">
-      <div class="w-full h-full max-h-full grid grid-cols-4 sm:grid-cols-6 grid-rows-6 sm:grid-rows-4 gap-1.5 sm:gap-2.5 md:gap-3 p-2 sm:p-4 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm">
+    <!-- Contenedor del Tablero de Cartas (24 cartas: grid simétrico en móvil y desktop) -->
+    <main class="flex-1 w-full max-w-full mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-center min-h-0 overflow-hidden">
+      <div 
+        class="grid gap-1.5 sm:gap-2 md:gap-2.5 p-2 sm:p-3 md:p-4 rounded-2xl sm:rounded-3xl bg-slate-900/60 border border-slate-800 shadow-2xl backdrop-blur-sm justify-items-center items-center mx-auto"
+        :style="{
+          gridTemplateColumns: `repeat(${colCount}, ${cardWidth}px)`,
+          gridTemplateRows: `repeat(${rowCount}, ${cardHeight}px)`,
+          maxWidth: '100%',
+          width: 'fit-content'
+        }"
+      >
         <Cartas
           v-for="carta in numeros"
           :key="carta.id"
           :carta="carta"
           :cardCount="cardCount"
+          :cardHeight="cardHeight"
+          :cardWidth="cardWidth"
           :tableroBloqueado="tableroBloqueado"
           @verificando="verificar"
         />
@@ -94,6 +179,13 @@ const {
       :card-count="cardCount"
       :is-competitive="false"
       @play-again="() => resetGame(false)"
+    />
+
+    <!-- Modal de Confirmación de Salida / Pausa -->
+    <GamePauseModal
+      :is-open="showPauseModal"
+      @resume="onResumeGame"
+      @exit="onConfirmExit"
     />
 
   </div>
