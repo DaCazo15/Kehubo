@@ -90,7 +90,6 @@ let unsubRoom: Unsubscribe | (() => void) | null = null
 let unsubPlayers: Unsubscribe | (() => void) | null = null
 
 function startMultiplayerMatch() {
-  playRandomTrack()
   const syncDeck = currentRoom.value?.config?.deck || []
   
   cartas.value = syncDeck.map(c => ({
@@ -116,6 +115,7 @@ function startMultiplayerMatch() {
     }
     tableroBloqueado.value = false
     iniciarCronometro()
+    playRandomTrack()
   })
 }
 

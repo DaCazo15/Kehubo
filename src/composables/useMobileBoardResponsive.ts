@@ -19,7 +19,7 @@ export interface MobileGridConfig {
  */
 export function getMobileGridConfig(cardCount: number, isLandscape: boolean = false): MobileGridConfig {
   let rowCount = 6
-  let colCount = 5
+  let colCount = 4
 
   if (isLandscape) {
     if (cardCount === 40) {
@@ -34,17 +34,17 @@ export function getMobileGridConfig(cardCount: number, isLandscape: boolean = fa
       colCount = 6
     }
   } else {
-    // Modo Portrait (Vertical - estándar en teléfonos con relleno simétrico)
+    // Modo Portrait (Vertical - estándar en teléfonos)
     if (cardCount === 40) {
       rowCount = 8
-      colCount = 7
+      colCount = 5
     } else if (cardCount === 32) {
       rowCount = 8
-      colCount = 6
+      colCount = 4
     } else {
       // 24 cartas
       rowCount = 6
-      colCount = 5
+      colCount = 4
     }
   }
 
@@ -92,7 +92,7 @@ export function useMobileBoardResponsive(options: MobileBoardOptions) {
   const colCount = ref<number>(4)
 
   /**
-   * Obtiene la altura real medida de los elementos superiores (Header y Tablero)
+   * Obtiene la altura real medida del div del logo (Header) y del div del puntaje (Tablero)
    */
   const getReservedHeaderHeights = (): { headerHeight: number; tableroHeight: number } => {
     if (typeof window === 'undefined') {
@@ -102,22 +102,24 @@ export function useMobileBoardResponsive(options: MobileBoardOptions) {
     const headerEl = options.headerRef.value?.$el || options.headerRef.value
     const tableroEl = options.tableroRef.value?.$el || options.tableroRef.value
 
-    const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 50
-    const tableroHeight = tableroEl ? tableroEl.getBoundingClientRect().height : 46
+    const headerHeight = headerEl ? (headerEl.offsetHeight || headerEl.getBoundingClientRect?.().height || 50) : 50
+    const tableroHeight = tableroEl ? (tableroEl.offsetHeight || tableroEl.getBoundingClientRect?.().height || 46) : 46
 
     return {
-      headerHeight: Math.max(headerHeight, 44),
-      tableroHeight: Math.max(tableroHeight, 40)
+      headerHeight,
+      tableroHeight
     }
   }
 
   /**
-   * Calcula las dimensiones exactas pixel-perfect para la cuadrícula y cartas en móvil
+   * Calcula las dimensiones exactas para la cuadrícula y cartas en móvil
+   * Tomando el alto total de la pantalla, restando el div del logo y el div del puntaje,
+   * y dividiendo el resto entre la cantidad de filas que toquen.
    */
   const calculateMobileDimensions = () => {
     if (typeof window === 'undefined') return
 
-    // Obtener dimensiones reales del viewport móvil (soporta barra de navegación dinámica)
+    // 1. Obtener dimensiones reales de pantalla / visual viewport móvil
     const viewportWidth = window.visualViewport?.width || window.innerWidth
     const viewportHeight = window.visualViewport?.height || window.innerHeight
 
@@ -131,28 +133,25 @@ export function useMobileBoardResponsive(options: MobileBoardOptions) {
     rowCount.value = gridConfig.rowCount
     colCount.value = gridConfig.colCount
 
+    // 2. Medir div del logo y div del puntaje
     const { headerHeight, tableroHeight } = getReservedHeaderHeights()
 
-    // 1. Cálculo de espacio disponible horizontal
-    const totalGapsWidth = (colCount.value - 1) * MOBILE_METRICS.gapX
-    const availableWidth = viewportWidth - MOBILE_METRICS.mainPaddingX - MOBILE_METRICS.gridPaddingX - totalGapsWidth
-
-    // 2. Cálculo de espacio disponible vertical
+    // 3. Restar del alto total de pantalla el div del logo, el div del puntaje, paddings y gaps
     const totalGapsHeight = (rowCount.value - 1) * MOBILE_METRICS.gapY
     const totalReservedHeight = headerHeight + tableroHeight + MOBILE_METRICS.mainPaddingY + MOBILE_METRICS.gridPaddingY + totalGapsHeight
-    const availableHeight = viewportHeight - totalReservedHeight
+    const availableHeight = Math.max(0, viewportHeight - totalReservedHeight)
 
-    // 3. Altura calculada por restricción vertical
+    // 4. Dividir el resto entre la cantidad de filas
     const computedHeight = Math.floor(availableHeight / rowCount.value)
 
-    // 4. Altura máxima calculada por restricción horizontal (proporción 3:4 -> alto = ancho / 0.75)
+    // 5. Restricción de ancho disponible (para mantener proporción simétrica 3:4)
+    const totalGapsWidth = (colCount.value - 1) * MOBILE_METRICS.gapX
+    const availableWidth = Math.max(0, viewportWidth - MOBILE_METRICS.mainPaddingX - MOBILE_METRICS.gridPaddingX - totalGapsWidth)
     const maxCardWidth = Math.floor(availableWidth / colCount.value)
     const heightFromWidthLimit = Math.floor(maxCardWidth / MOBILE_METRICS.aspectRatio)
 
-    // 5. Tomar la menor altura para asegurar que quepa 100% tanto en vertical como en horizontal
+    // 6. Tomar la altura que satisfaga la proporción sin desbordar
     let finalHeight = Math.min(computedHeight, heightFromWidthLimit)
-
-    // Aplicar límites mínimos de seguridad
     finalHeight = Math.max(MOBILE_METRICS.minCardHeight, finalHeight)
 
     cardHeight.value = finalHeight

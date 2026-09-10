@@ -143,6 +143,9 @@ export function useGame(options: UseGameOptions = {}) {
     // Iniciar cronómetro y desbloquear tablero
     iniciarCronometro()
     tableroBloqueado.value = false
+
+    // Reproducir pista aleatoria al iniciar la partida (tras concluir el conteo)
+    playRandomTrack()
   }
 
   /**
@@ -179,9 +182,6 @@ export function useGame(options: UseGameOptions = {}) {
     // Inicializar cartas según configuración elegida
     inicializarCartas(cardCount.value, cartasVisiblesAlInicio.value, cardContentType.value)
     barajar()
-
-    // Reproducir una pista aleatoria para la nueva partida
-    playRandomTrack()
 
     // Iniciar cuenta regresiva (5 segundos de preparación)
     startCountdown(5, () => {
