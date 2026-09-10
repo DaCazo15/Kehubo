@@ -17,7 +17,9 @@ import {
 import { httpsCallable } from 'firebase/functions'
 import { db, functions } from '../config/firebase'
 import { useAuth } from './useAuth'
-import type { Room, RoomPlayer, RoomConfig, Card } from '../types'
+import type { Room, RoomPlayer, RoomConfig, Card, CardContentType } from '../types'
+import { LETRAS_ALFABETO } from './useCardDeck'
+import { obtenerAnimalesAleatorios } from '../helpers/animales'
 
 export function useMultiplayerRoom() {
   const { user, userDisplayName, userAvatar, userCountry } = useAuth()
@@ -38,14 +40,30 @@ export function useMultiplayerRoom() {
   }
 
   /**
-   * Genera el mazo aleatorio sincronizado para la sala.
-   * Cada carta tiene su valor numérico real asignado.
+   * Genera el mazo aleatorio sincronizado para la sala según el tipo de contenido (números, letras o imágenes).
    */
-  function generateSynchronizedDeck(cardCount = 24, cartasVisibles = false): Card[] {
+  function generateSynchronizedDeck(
+    cardCount = 24, 
+    cartasVisibles = false, 
+    cardContentType: CardContentType = 'numeros'
+  ): Card[] {
     const paresCount = Math.floor(cardCount / 2)
-    const base: number[] = []
-    for (let i = 1; i <= paresCount; i++) {
-      base.push(i, i)
+    const base: (number | string)[] = []
+
+    if (cardContentType === 'letras') {
+      const letras = LETRAS_ALFABETO.slice(0, paresCount)
+      for (const letra of letras) {
+        base.push(letra, letra)
+      }
+    } else if (cardContentType === 'imagenes') {
+      const animales = obtenerAnimalesAleatorios(paresCount)
+      for (const img of animales) {
+        base.push(img, img)
+      }
+    } else {
+      for (let i = 1; i <= paresCount; i++) {
+        base.push(i, i)
+      }
     }
 
     const cards: Card[] = base.map((valor, index) => ({
@@ -92,12 +110,13 @@ export function useMultiplayerRoom() {
       const player = getCurrentPlayerData()
       const cardCount = config.cardCount || 24
       const cartasVisibles = config.cartasVisibles || false
+      const cardContentType: CardContentType = config.cardContentType || 'numeros'
 
       // 1. Intentar crear la sala mediante Cloud Function (mazo protegido en secret/deck)
       try {
-        const createRoomFn = httpsCallable<{ config: { cardCount: number; cartasVisibles: boolean }; player: any }, { success: boolean; roomId: string; code: string; publicDeck: Card[] }>(functions, 'createMultiplayerRoom')
+        const createRoomFn = httpsCallable<{ config: { cardCount: number; cartasVisibles: boolean; cardContentType?: CardContentType }; player: any }, { success: boolean; roomId: string; code: string; publicDeck: Card[] }>(functions, 'createMultiplayerRoom')
         const result = await createRoomFn({
-          config: { cardCount, cartasVisibles },
+          config: { cardCount, cartasVisibles, cardContentType },
           player
         })
 
@@ -112,6 +131,7 @@ export function useMultiplayerRoom() {
             config: {
               cardCount,
               cartasVisibles,
+              cardContentType,
               deck: publicDeck
             }
           }
@@ -122,7 +142,7 @@ export function useMultiplayerRoom() {
       }
 
       // 2. Fallback de cliente si la función no está desplegada en entorno local
-      const deck = generateSynchronizedDeck(cardCount, cartasVisibles)
+      const deck = generateSynchronizedDeck(cardCount, cartasVisibles, cardContentType)
       const code = generateRoomCode()
       const roomRef = doc(collection(db, 'rooms'))
       const roomId = roomRef.id
@@ -135,6 +155,7 @@ export function useMultiplayerRoom() {
         config: {
           cardCount,
           cartasVisibles,
+          cardContentType,
           deck
         },
         createdAt: serverTimestamp()
@@ -382,15 +403,20 @@ export function useMultiplayerRoom() {
   }
 
   // Actualizar configuración de la sala por el moderador
-  async function updateRoomConfig(roomId: string, config: { cardCount: number; cartasVisibles: boolean }) {
+  async function updateRoomConfig(
+    roomId: string, 
+    config: { cardCount: number; cartasVisibles: boolean; cardContentType?: CardContentType }
+  ) {
     if (!roomId) return
     try {
-      const deck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles)
+      const cardContentType: CardContentType = config.cardContentType || currentRoom.value?.config?.cardContentType || 'numeros'
+      const deck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles, cardContentType)
       const roomRef = doc(db, 'rooms', roomId)
       await updateDoc(roomRef, {
         config: {
           cardCount: config.cardCount,
           cartasVisibles: config.cartasVisibles,
+          cardContentType,
           deck
         }
       })
@@ -426,8 +452,9 @@ export function useMultiplayerRoom() {
       const roomSnap = await getDoc(roomRef)
       if (roomSnap.exists()) {
         const roomData = roomSnap.data()
-        const config = roomData.config || { cardCount: 24, cartasVisibles: false }
-        const freshDeck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles)
+        const config = roomData.config || { cardCount: 24, cartasVisibles: false, cardContentType: 'numeros' }
+        const cardContentType: CardContentType = config.cardContentType || 'numeros'
+        const freshDeck = generateSynchronizedDeck(config.cardCount, config.cartasVisibles, cardContentType)
         const nextRound = ((roomData.round as number) || 1) + 1
 
         await updateDoc(roomRef, {

@@ -1,29 +1,35 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseModal from '../common/BaseModal.vue'
+import BaseButton from '../common/BaseButton.vue'
+import type { CardContentType } from '../../types'
+import { ICO_ANIMALES } from '../../helpers/animales'
 
 const props = withDefaults(
   defineProps<{
     isOpen?: boolean
     initialCardCount?: number
     initialCartasVisibles?: boolean
+    initialCardContentType?: CardContentType
     isCompetitive?: boolean
   }>(),
   {
     isOpen: true,
     initialCardCount: 24,
     initialCartasVisibles: false,
+    initialCardContentType: 'numeros',
     isCompetitive: true
   }
 )
 
 const emit = defineEmits<{
-  (e: 'start', config: { cardCount: number; cartasVisibles: boolean }): void
+  (e: 'start', config: { cardCount: number; cartasVisibles: boolean; cardContentType: CardContentType }): void
   (e: 'close'): void
 }>()
 
 const selectedCardCount = ref<number>(props.initialCardCount)
 const selectedCartasVisibles = ref<boolean>(props.initialCartasVisibles)
+const selectedCardContentType = ref<CardContentType>(props.initialCardContentType)
 
 const difficulties = [
   {
@@ -55,10 +61,24 @@ const difficulties = [
   }
 ]
 
+function selectCardCount(count: number) {
+  selectedCardCount.value = count
+  // Si cambia a 32 o 40 y tenía letras seleccionadas, revertir a números
+  if (count !== 24 && selectedCardContentType.value === 'letras') {
+    selectedCardContentType.value = 'numeros'
+  }
+}
+
 function handleStart() {
+  let finalType = selectedCardContentType.value
+  if (selectedCardCount.value !== 24 && finalType === 'letras') {
+    finalType = 'numeros'
+  }
+
   emit('start', {
     cardCount: selectedCardCount.value,
-    cartasVisibles: selectedCartasVisibles.value
+    cartasVisibles: selectedCartasVisibles.value,
+    cardContentType: finalType
   })
 }
 </script>
@@ -83,7 +103,7 @@ function handleStart() {
           PREPARA TU DUELO
         </h2>
         <p class="text-xs text-slate-400 max-w-md mx-auto">
-          Selecciona la dificultad del tablero y el modo de visibilidad antes de iniciar.
+          Selecciona la dificultad del tablero, el tipo de cartas y el modo de visibilidad.
         </p>
       </div>
     </template>
@@ -92,7 +112,7 @@ function handleStart() {
       <!-- Selector de Dificultad (24 / 32 / 40) -->
       <div class="space-y-2.5">
         <label class="block text-xs font-black uppercase tracking-wider text-slate-300">
-          1. Número de Cartas (Dificultad)
+          Dificultad de la partida
         </label>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -100,7 +120,7 @@ function handleStart() {
             v-for="diff in difficulties"
             :key="diff.count"
             type="button"
-            @click="selectedCardCount = diff.count"
+            @click="selectCardCount(diff.count)"
             class="p-3 sm:p-4 rounded-2xl border transition-all text-left flex sm:flex-col justify-between items-center sm:items-stretch gap-2 group relative overflow-hidden cursor-pointer"
             :class="selectedCardCount === diff.count 
               ? 'bg-amber-500/15 border-amber-400 text-slate-100 ring-2 ring-amber-400/40 shadow-lg shadow-amber-500/10 scale-[1.01]' 
@@ -125,6 +145,80 @@ function handleStart() {
         </div>
       </div>
 
+      <!-- Selector de Tipo de Contenido (Números / Letras / Imágenes) -->
+      <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5 transition-all">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-black uppercase tracking-wider text-slate-300">
+            Tipo de Pares
+          </label>
+          <span v-if="selectedCardCount === 24" class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+            3 Modos Disponibles
+          </span>
+          <span v-else class="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            2 Modos Disponibles
+          </span>
+        </div>
+        
+        <div 
+          class="grid gap-2.5"
+          :class="selectedCardCount === 24 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'"
+        >
+          <!-- Opción Números -->
+          <button
+            type="button"
+            @click="selectedCardContentType = 'numeros'"
+            class="p-3 rounded-xl border transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+            :class="selectedCardContentType === 'numeros'
+              ? 'bg-amber-500/20 border-amber-400 text-slate-100 ring-1 ring-amber-400/50 shadow-md shadow-amber-500/10'
+              : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'"
+          >
+            <i class="bi bi-123 text-xl shrink-0" :class="selectedCardContentType === 'numeros' ? 'text-amber-400' : 'text-slate-500'"></i>
+            <div class="text-left">
+              <p class="font-black text-xs sm:text-sm">Números</p>
+            </div>
+          </button>
+
+          <!-- Opción Letras (Exclusivo 24 Cartas) -->
+          <button
+            v-if="selectedCardCount === 24"
+            type="button"
+            @click="selectedCardContentType = 'letras'"
+            class="p-3 rounded-xl border transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+            :class="selectedCardContentType === 'letras'
+              ? 'bg-pink-500/20 border-pink-400 text-slate-100 ring-1 ring-pink-400/50 shadow-md shadow-pink-500/10'
+              : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'"
+          >
+            <i class="bi bi-fonts text-xl shrink-0" :class="selectedCardContentType === 'letras' ? 'text-pink-400' : 'text-slate-500'"></i>
+            <div class="text-left">
+              <p class="font-black text-xs sm:text-sm">Letras</p>
+            </div>
+          </button>
+
+          <!-- Opción Imágenes (Animales) -->
+          <button
+            type="button"
+            @click="selectedCardContentType = 'imagenes'"
+            class="p-3 rounded-xl border transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+            :class="selectedCardContentType === 'imagenes'
+              ? 'bg-emerald-500/20 border-emerald-400 text-slate-100 ring-1 ring-emerald-400/50 shadow-md shadow-emerald-500/10'
+              : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'"
+          >
+            <img 
+              :src="ICO_ANIMALES" 
+              alt="Icono Animales" 
+              class="w-6 h-6 object-contain shrink-0 transition-all duration-200" 
+              :class="selectedCardContentType === 'imagenes' ? 'scale-110' : 'opacity-80'"
+              :style="selectedCardContentType === 'imagenes'
+                ? { filter: 'invert(72%) sepia(40%) saturate(600%) hue-rotate(115deg) brightness(98%) contrast(94%) drop-shadow(0 0 6px rgba(52,211,153,0.6))' }
+                : { filter: 'invert(48%) sepia(13%) saturate(640%) hue-rotate(178deg) brightness(93%) contrast(89%)' }"
+            />
+            <div class="text-left">
+              <p class="font-black text-xs sm:text-sm">Imágenes</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- Toggle: Cartas Visibles al Inicio -->
       <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
         <div class="flex items-center justify-between gap-3">
@@ -132,7 +226,7 @@ function handleStart() {
             <div class="flex items-center gap-2">
               <i class="bi bi-eye-fill text-amber-400"></i>
               <span class="text-xs font-black uppercase tracking-wider text-slate-200">
-                Cartas Visibles al Inicio
+                Primer vistazo
               </span>
             </div>
             <p class="text-[11px] text-slate-400 max-w-sm">

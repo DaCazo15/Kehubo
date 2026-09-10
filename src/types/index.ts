@@ -2,16 +2,20 @@
  * Definiciones de Tipos de Dominio para Kehubo Game
  */
 
+export type CardContentType = 'numeros' | 'letras' | 'imagenes'
+
 export interface Card {
   id: number
-  valor: number | null
+  valor: number | string | null
   revelada: boolean
   encontrada: boolean
+  isDummy?: boolean
 }
 
 export interface RoomConfig {
   cardCount: number
   cartasVisibles: boolean
+  cardContentType?: CardContentType
   deck?: Card[]
 }
 

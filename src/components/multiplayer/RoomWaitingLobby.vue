@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { getCountryName } from '../../helpers/countries'
-import type { MultiplayerRoom, RoomPlayer } from '../../types'
+import type { MultiplayerRoom, RoomPlayer, CardContentType } from '../../types'
 
-const props = defineProps<{
-  currentRoom: MultiplayerRoom | null
-  roomPlayers: RoomPlayer[]
-  isHost: boolean
-  cardCount: number
-  cartasVisibles: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    currentRoom: MultiplayerRoom | null
+    roomPlayers: RoomPlayer[]
+    isHost: boolean
+    cardCount: number
+    cartasVisibles: boolean
+    cardContentType?: CardContentType
+  }>(),
+  {
+    cardContentType: 'numeros'
+  }
+)
 
 const emit = defineEmits<{
-  (e: 'updateConfig', config: { cardCount?: number; cartasVisibles?: boolean }): void
+  (e: 'updateConfig', config: { cardCount?: number; cartasVisibles?: boolean; cardContentType?: CardContentType }): void
   (e: 'startGame'): void
 }>()
 
@@ -32,6 +38,14 @@ function copyLink() {
   navigator.clipboard.writeText(url)
   copiedLink.value = true
   setTimeout(() => { copiedLink.value = false }, 2000)
+}
+
+function handleCardCountChange(newCount: number) {
+  const updates: { cardCount: number; cardContentType?: CardContentType } = { cardCount: newCount }
+  if (newCount !== 24 && props.cardContentType === 'letras') {
+    updates.cardContentType = 'numeros'
+  }
+  emit('updateConfig', updates)
 }
 </script>
 
@@ -74,6 +88,25 @@ function copyLink() {
               <span>{{ copiedLink ? '¡Enlace Copiado!' : 'Copiar Enlace' }}</span>
             </BaseButton>
           </div>
+        </div>
+
+        <!-- Badges de Configuración Actual de la Sala -->
+        <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-bold text-slate-300">
+            <i class="bi bi-grid-3x3 text-amber-400"></i>
+            <span>{{ cardCount }} Cartas ({{ Math.floor(cardCount / 2) }} Pares)</span>
+          </span>
+
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-bold"
+                :class="cardContentType === 'imagenes' ? 'text-emerald-300' : (cardContentType === 'letras' ? 'text-pink-300' : 'text-amber-300')">
+            <i :class="cardContentType === 'imagenes' ? 'bi-image-fill' : (cardContentType === 'letras' ? 'bi-fonts' : 'bi-123')"></i>
+            <span class="capitalize">{{ cardContentType === 'imagenes' ? 'Imágenes (Animales)' : (cardContentType === 'letras' ? 'Letras' : 'Números') }}</span>
+          </span>
+
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] font-bold text-slate-400">
+            <i :class="cartasVisibles ? 'bi-eye-fill text-pink-400' : 'bi-eye-slash-fill text-slate-500'"></i>
+            <span>{{ cartasVisibles ? 'Cartas Visibles (5s)' : 'Cartas Ocultas' }}</span>
+          </span>
         </div>
       </div>
 
@@ -144,19 +177,23 @@ function copyLink() {
       </div>
 
       <!-- Ajustes de Partida (Moderador) -->
-      <div v-if="isHost" class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
-        <h4 class="text-xs font-black uppercase text-amber-400">
-          Ajustes de Partida (Solo Líder)
-        </h4>
+      <div v-if="isHost" class="p-4 sm:p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-black uppercase text-amber-400 flex items-center gap-1.5">
+            <i class="bi bi-sliders"></i>
+            <span>Ajustes de Partida (Solo Líder)</span>
+          </h4>
+          <span class="text-[10px] text-slate-400 font-bold uppercase">Sincronizado en tiempo real</span>
+        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <!-- Cartas -->
-          <div class="space-y-1">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+          <!-- Cantidad de Cartas -->
+          <div class="space-y-1.5">
             <label class="text-slate-400 font-bold uppercase text-[10px]">Cantidad de Cartas</label>
             <select
               :value="cardCount"
-              @change="emit('updateConfig', { cardCount: Number(($event.target as HTMLSelectElement).value) })"
-              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer"
+              @change="handleCardCountChange(Number(($event.target as HTMLSelectElement).value))"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer focus:border-amber-400"
             >
               <option :value="24">24 Cartas (12 Pares)</option>
               <option :value="32">32 Cartas (16 Pares)</option>
@@ -164,16 +201,30 @@ function copyLink() {
             </select>
           </div>
 
+          <!-- Tipo de Pares -->
+          <div class="space-y-1.5">
+            <label class="text-slate-400 font-bold uppercase text-[10px]">Tipo de Pares</label>
+            <select
+              :value="cardContentType || 'numeros'"
+              @change="emit('updateConfig', { cardContentType: ($event.target as HTMLSelectElement).value as CardContentType })"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer focus:border-amber-400"
+            >
+              <option value="numeros">🔢 Números (1, 2, 3...)</option>
+              <option value="letras" :disabled="cardCount !== 24">🔤 Letras (A, B, C... {{ cardCount !== 24 ? '- Solo 24 cartas' : '' }})</option>
+              <option value="imagenes">🦁 Imágenes (Animales)</option>
+            </select>
+          </div>
+
           <!-- Cartas Visibles -->
-          <div class="space-y-1">
+          <div class="space-y-1.5">
             <label class="text-slate-400 font-bold uppercase text-[10px]">Visibilidad de Inicio</label>
             <select
               :value="cartasVisibles ? 'true' : 'false'"
               @change="emit('updateConfig', { cartasVisibles: ($event.target as HTMLSelectElement).value === 'true' })"
-              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none cursor-pointer focus:border-amber-400"
             >
-              <option value="false">Cartas Ocultas (A ciegas)</option>
-              <option value="true">Cartas Visibles (5s de memorización)</option>
+              <option value="false">🙈 Cartas Ocultas (A ciegas)</option>
+              <option value="true">👁️ Cartas Visibles (5s memorización)</option>
             </select>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useMultiplayerRoom } from '../composables/useMultiplayerRoom'
 import CreateRoomCard from '../components/multiplayer/CreateRoomCard.vue'
 import JoinRoomCard from '../components/multiplayer/JoinRoomCard.vue'
+import type { CardContentType } from '../types'
 
 const router = useRouter()
 const { loading, error, createRoom, joinRoom } = useMultiplayerRoom()
@@ -11,11 +12,13 @@ const { loading, error, createRoom, joinRoom } = useMultiplayerRoom()
 const activeTab = ref<'create' | 'join'>('create')
 const cardCount = ref<number>(24)
 const cartasVisibles = ref<boolean>(false)
+const cardContentType = ref<CardContentType>('numeros')
 
 async function handleCreateRoom() {
   const res = await createRoom({
     cardCount: cardCount.value,
-    cartasVisibles: cartasVisibles.value
+    cartasVisibles: cartasVisibles.value,
+    cardContentType: cardContentType.value
   })
 
   if (res?.success && res.roomId) {
@@ -81,6 +84,7 @@ async function handleJoinRoom(code: string) {
         v-if="activeTab === 'create'"
         v-model:card-count="cardCount"
         v-model:cartas-visibles="cartasVisibles"
+        v-model:card-content-type="cardContentType"
         :loading="loading"
         @create="handleCreateRoom"
       />
